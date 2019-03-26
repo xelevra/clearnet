@@ -11,12 +11,10 @@ import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.disposables.Disposable
 import io.reactivex.internal.schedulers.ImmediateThinScheduler
-import io.reactivex.schedulers.Schedulers
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.lang.reflect.Type
-import java.util.*
 
 interface ConversionStrategy {
     @Throws(JSONException::class, ConversionStrategyError::class)
@@ -106,23 +104,6 @@ interface ISmartConverter {
     fun convert(body: String, type: Type, strategy: ConversionStrategy): Any?
 }
 
-/**
- * Request executor non typed callback for inner use
- */
-@Deprecated("Use reactive streams")
-interface RequestCallback<T> {
-
-    /**
-     * @param response – the deserialized model
-     */
-    fun onSuccess(response: T)
-
-    /**
-     * @param exception – the exception, which can be caught during request, conversation or validation processes
-     */
-    fun onFailure(exception: ClearNetworkException)
-}
-
 interface ICallbackHolder {
     val scheduler: Scheduler
         get() = ImmediateThinScheduler.INSTANCE
@@ -152,9 +133,6 @@ interface HeaderObserver {
 
 interface ICallbackStorage {
     fun <T> observe(method: String): Observable<T>
-
-    @Deprecated("")
-    fun subscribe(method: String, callback: RequestCallback<*>, once: Boolean = false): Subscription
 }
 
 @Deprecated("")

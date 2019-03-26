@@ -65,22 +65,6 @@ class Core(
     }
 
 
-    override fun subscribe(method: String, callback: RequestCallback<*>, once: Boolean): Subscription {
-        val disposable = collector.filter { (task, _) -> task.respond(method, null) }
-                .compose { if (once) it.take(1) else it }
-                .map { it.second }.subscribe {
-                    if (it is CoreTask.SuccessResult) {
-                        (callback as RequestCallback<Any?>).onSuccess(it.result)
-                    } else if (it is CoreTask.ErrorResult) {
-                        callback.onFailure(it.error)
-                    }
-                }
-
-        return object : Subscription {
-            override fun unsubscribe() = disposable.dispose()
-        }
-    }
-
     override fun <T> observe(method: String): Observable<T> {
         return collector.filter { (task, _) -> task.respond(method, null) }
                 .map { it.second }
