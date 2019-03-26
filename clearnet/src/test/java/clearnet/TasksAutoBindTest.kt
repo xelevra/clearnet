@@ -30,15 +30,11 @@ class TasksAutoBindTest : CoreBlocksTest() {
         val semaphore = Semaphore(3)
         semaphore.acquire(3)
 
-        val callback = object : RequestCallbackStub<String>() {
-            override fun onSuccess(response: String) {
-                semaphore.release()
-            }
-        }
+        val callback = {_: String -> semaphore.release(); Unit}
 
-        testRequests.bindableTask(1, callback)
-        testRequests.bindableTask(1, callback)
-        testRequests.bindableTask(1, callback)
+        testRequests.bindableTask(1).subscribe(callback)
+        testRequests.bindableTask(1).subscribe(callback)
+        testRequests.bindableTask(1).subscribe(callback)
 
         waitForTasksOnTestRequestExecutor()
 
@@ -54,13 +50,10 @@ class TasksAutoBindTest : CoreBlocksTest() {
         val semaphore = Semaphore(2)
         semaphore.acquire(2)
 
-        val callback = object : RequestCallbackStub<String>() {
-            override fun onSuccess(response: String) {
-                semaphore.release()
-            }
-        }
-        testRequests.bindableTask(1, callback)
-        testRequests.bindableTask(2, callback)
+        val callback = {_: String -> semaphore.release(); Unit}
+
+        testRequests.bindableTask(1).subscribe(callback)
+        testRequests.bindableTask(2).subscribe(callback)
 
         waitForTasksOnTestRequestExecutor()
 
@@ -76,14 +69,10 @@ class TasksAutoBindTest : CoreBlocksTest() {
         val semaphore = Semaphore(2)
         semaphore.acquire(2)
 
-        val callback = object : RequestCallbackStub<String>() {
-            override fun onSuccess(response: String) {
-                semaphore.release()
-            }
-        }
+        val callback = {_: String -> semaphore.release(); Unit}
 
-        testRequests.notBindableTask(callback)
-        testRequests.notBindableTask(callback)
+        testRequests.notBindableTask().subscribe(callback)
+        testRequests.notBindableTask().subscribe(callback)
 
         waitForTasksOnTestRequestExecutor()
 

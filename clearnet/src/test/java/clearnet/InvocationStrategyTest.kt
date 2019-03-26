@@ -2,7 +2,7 @@ package clearnet
 
 import clearnet.InvocationStrategy.*
 import clearnet.error.ClearNetworkException
-import clearnet.interfaces.RequestCallback
+import clearnet.error.NetworkException
 import clearnet.help.*
 import io.reactivex.schedulers.TestScheduler
 import org.junit.Before
@@ -32,7 +32,7 @@ class InvocationStrategyTest(
     val converterExecutor = Core(ImmediateExecutor, testScheduler, blocks = *invocationBlocks.getAll())
     val testRequests: TestRequests = ExecutorWrapper(converterExecutor, HeadersProviderStub, GsonTestSerializer())
             .create(TestRequests::class.java, testRequestExecutor, Int.MAX_VALUE)
-    val testCallback = TestCallback()
+    val testObserver = TestObserver()
     val timeT = invocationBlocks.getFromNetTimeThreshold
 
     companion object {
@@ -63,7 +63,7 @@ class InvocationStrategyTest(
         testRequestExecutor.state = 0
         testRequestExecutor.throwError = false
         testCacheProvider.state = 0
-        testCallback.state = 0
+        testObserver.state = 0
     }
 
     @Test
@@ -72,9 +72,9 @@ class InvocationStrategyTest(
         testCacheProvider.returnObject = returnObject
 
         when (invocationStrategy) {
-            NO_CACHE -> testRequests.noCache(testCallback)
-            PRIORITY_REQUEST -> testRequests.priorityRequest(testCallback)
-            PRIORITY_CACHE -> testRequests.priorityCache(testCallback)
+            NO_CACHE -> testRequests.noCache().subscribe(testObserver)
+            PRIORITY_REQUEST -> testRequests.priorityRequest().subscribe(testObserver)
+            PRIORITY_CACHE -> testRequests.priorityCache().subscribe(testObserver)
         }
 
         testScheduler.advanceTimeBy(timeT, TimeUnit.MILLISECONDS)
@@ -82,7 +82,7 @@ class InvocationStrategyTest(
 
         assertEquals(requestExecutorStateExpectation, testRequestExecutor.state, "Strategy: $invocationStrategy")
         assertEquals(cacheProviderStateExpectation, testCacheProvider.state, "Strategy: + $invocationStrategy")
-        assertEquals(callbackStateExpectation, testCallback.state, "Strategy: + $invocationStrategy Exception: ${testCallback.lastException}")
+        assertEquals(callbackStateExpectation, testObserver.state, "Strategy: + $invocationStrategy Exception: ${testObserver.lastException}")
     }
 
     class TestRequestExecutor : RequestExecutorStub() {
@@ -96,17 +96,18 @@ class InvocationStrategyTest(
         }
     }
 
-    class TestCallback : RequestCallback<String> {
+    class TestObserver : ObserverStub<String>() {
         var state = 0;
         var lastException: ClearNetworkException? = null
-        override fun onSuccess(response: String) {
+
+        override fun onNext(t: String?) {
             state += 10
         }
 
-        override fun onFailure(exception: ClearNetworkException) {
-            if (exception.kind != ClearNetworkException.KIND.NETWORK) throw exception
+        override fun onError(e: Throwable) {
+            if (e !is NetworkException) throw e
             state++
-            lastException = exception
+            lastException = e
         }
     }
 }

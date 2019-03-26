@@ -25,16 +25,13 @@ class TasksAutoBindSyncTest : CoreBlocksTest() {
     fun bindAfterSuccess() {
         val successes = AtomicInteger()
 
-        val callback = object : RequestCallbackStub<String>() {
-            override fun onSuccess(response: String) {
-                successes.incrementAndGet()
-            }
-        }
-        testRequests.bindableTask(1, callback)
+        val callback = { _: String -> successes.incrementAndGet(); Unit }
+
+        testRequests.bindableTask(1).subscribe(callback)
         forwardScheduler()
         assertEquals(1, successes.get())
 
-        testRequests.bindableTask(1, callback)
+        testRequests.bindableTask(1).subscribe(callback)
         forwardScheduler()
         assertEquals(2, successes.get())
     }
@@ -43,15 +40,15 @@ class TasksAutoBindSyncTest : CoreBlocksTest() {
     fun bindAfterDeliverResult() {   // what happens if new callback is subscribed after result is delivered
         val successes = AtomicInteger()
 
-        val callback = object : RequestCallbackStub<String>() {
-            override fun onSuccess(response: String) {
+        val observer = object : ObserverStub<String>(){
+            override fun onNext(t: String?) {
                 if (successes.getAndIncrement() == 0) {
-                    testRequests.withCacheBindableTask(this)
+                    testRequests.withCacheBindableTask().subscribe(this)
                 }
             }
         }
 
-        testRequests.withCacheBindableTask(callback)
+        testRequests.withCacheBindableTask().subscribe(observer)
         forwardScheduler()
         forwardScheduler()
 
