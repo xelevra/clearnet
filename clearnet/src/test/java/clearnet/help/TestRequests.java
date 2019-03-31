@@ -1,10 +1,10 @@
 package clearnet.help;
 
-import annotations.Body;
-import annotations.NotBindable;
-import annotations.Parameter;
-import annotations.RPCMethod;
-import annotations.RPCMethodScope;
+import clearnet.annotations.Body;
+import clearnet.annotations.NotBindable;
+import clearnet.annotations.Parameter;
+import clearnet.annotations.RPCMethod;
+import clearnet.annotations.RPCMethodScope;
 import clearnet.annotations.InvocationStrategy;
 import clearnet.annotations.NoBatch;
 import io.reactivex.Observable;

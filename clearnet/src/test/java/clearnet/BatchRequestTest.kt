@@ -1,10 +1,11 @@
 package clearnet
 
-import clearnet.error.ClearNetworkException
 import clearnet.help.*
-import clearnet.interfaces.*
+import clearnet.interfaces.HeaderListener
+import clearnet.interfaces.HeaderProvider
+import clearnet.interfaces.ICacheProvider
+import clearnet.interfaces.IRequestExecutor
 import com.google.gson.Gson
-import io.reactivex.schedulers.TestScheduler
 import org.json.JSONArray
 import org.junit.Before
 import org.junit.Test

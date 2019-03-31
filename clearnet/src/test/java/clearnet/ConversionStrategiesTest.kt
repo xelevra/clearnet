@@ -115,8 +115,8 @@ class ConversionStrategiesTest(
         }
 
         override fun onError(e: Throwable) {
-            if (exception !is clearnet.error.ResponseErrorException) throw e
-            this.exception = e as ResponseErrorException
+            if (e !is clearnet.error.ResponseErrorException) throw e
+            this.exception = e
         }
 
         override fun onComplete() {}
