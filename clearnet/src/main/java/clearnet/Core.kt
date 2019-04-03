@@ -2,14 +2,13 @@ package clearnet
 
 import clearnet.error.UnknownExternalException
 import clearnet.interfaces.*
-import clearnet.interfaces.IInvocationBlock.QueueAlgorithm.IMMEDIATE
-import clearnet.interfaces.IInvocationBlock.QueueAlgorithm.TIME_THRESHOLD
 import clearnet.model.PostParams
 import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
+import java.lang.IllegalArgumentException
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
@@ -34,9 +33,10 @@ class Core(
         flow = blocks.associate { block ->
             val subject = PublishSubject.create<CoreTask>().toSerialized()
 
-            when (block.queueAlgorithm) {
-                IMMEDIATE -> subject.subscribeImmediate(block)
-                TIME_THRESHOLD -> subject.subscribeWithTimeThreshold(block)
+            when (block) {
+                is IInvocationSingleBlock -> subject.subscribeImmediate(block)
+                is IInvocationBatchBlock -> subject.subscribeWithTimeThreshold(block)
+                else -> throw IllegalArgumentException("Unsupported block type ${block::class.java.name}")
             }
 
             block.invocationBlockType to subject
@@ -95,7 +95,7 @@ class Core(
         placeToQueues(block.invocationBlockType, task, result.nextIndexes)
     }
 
-    private fun Observable<CoreTask>.subscribeImmediate(block: IInvocationBlock) {
+    private fun Observable<CoreTask>.subscribeImmediate(block: IInvocationSingleBlock) {
         this.observeOn(worker).subscribe { task ->
             val promise = task.promise().apply {
                 observe().observeOn(Schedulers.trampoline()).subscribe { result ->
@@ -105,16 +105,16 @@ class Core(
 
             // todo need test this
             ioExecutor.execute {
-                try{
+                try {
                     block.onEntity(promise)
-                }catch (e: Throwable){
+                } catch (e: Throwable) {
                     promise.setError(UnknownExternalException(e.message), block.invocationBlockType)
                 }
             }
         }
     }
 
-    private fun Observable<CoreTask>.subscribeWithTimeThreshold(block: IInvocationBlock) {
+    private fun Observable<CoreTask>.subscribeWithTimeThreshold(block: IInvocationBatchBlock) {
         this.buffer(block.queueTimeThreshold, TimeUnit.MILLISECONDS, worker).filter {
             !it.isEmpty()
         }.subscribe { taskList ->
@@ -130,7 +130,7 @@ class Core(
             ioExecutor.execute {
                 try {
                     block.onQueueConsumed(promises)
-                }catch (e: Throwable){
+                } catch (e: Throwable) {
                     promises.forEach {
                         it.setError(UnknownExternalException(e.message), block.invocationBlockType)
                     }

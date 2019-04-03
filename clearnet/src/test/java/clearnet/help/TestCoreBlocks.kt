@@ -47,7 +47,7 @@ open class TestCoreBlocks(
         CHECK_AUTH_TOKEN -> checkAuthTokenBlock
     }
 
-    object EmptyErrorsResolverBlock : IInvocationBlock {
+    object EmptyErrorsResolverBlock : IInvocationSingleBlock {
         override val invocationBlockType: InvocationBlockType
             get() = RESOLVE_ERROR
 
@@ -56,7 +56,7 @@ open class TestCoreBlocks(
         }
     }
 
-    object EmptyAuthTokenBlock : IInvocationBlock {
+    object EmptyAuthTokenBlock : IInvocationSingleBlock {
         override val invocationBlockType = CHECK_AUTH_TOKEN
     }
 }

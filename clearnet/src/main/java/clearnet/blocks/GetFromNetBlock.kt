@@ -4,11 +4,8 @@ import clearnet.*
 import clearnet.error.ClearNetworkException
 import clearnet.error.ConversionException
 import clearnet.error.NetworkException
-import clearnet.interfaces.IBodyValidator
-import clearnet.interfaces.IInvocationBlock
-import clearnet.interfaces.ISerializer
+import clearnet.interfaces.*
 import clearnet.interfaces.ConversionStrategy.SmartConverter
-import clearnet.interfaces.HeaderObserver
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -18,9 +15,9 @@ import java.util.NoSuchElementException
 class GetFromNetBlock(
         private val validator: IBodyValidator,
         private val converter: ISerializer
-) : IInvocationBlock {
+) : IInvocationBatchBlock {
     override val invocationBlockType = InvocationBlockType.GET_FROM_NET
-    override val queueAlgorithm = IInvocationBlock.QueueAlgorithm.TIME_THRESHOLD
+
     private val headersObserver = SimpleHeadersObserver()
 
     fun getHeadersObserver(): HeaderObserver = headersObserver

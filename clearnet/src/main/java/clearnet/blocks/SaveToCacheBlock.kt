@@ -4,11 +4,11 @@ import clearnet.CoreTask
 import clearnet.InvocationBlockType
 import clearnet.error.ConversionException
 import clearnet.interfaces.ICacheProvider
-import clearnet.interfaces.IInvocationBlock
+import clearnet.interfaces.IInvocationSingleBlock
 
 class SaveToCacheBlock(
         private val cacheProvider: ICacheProvider
-) : IInvocationBlock {
+) : IInvocationSingleBlock {
     override val invocationBlockType = InvocationBlockType.SAVE_TO_CACHE
 
     override fun onEntity(promise: CoreTask.Promise) = with(promise) {

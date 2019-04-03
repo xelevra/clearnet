@@ -142,19 +142,19 @@ interface Subscription {
 
 interface IInvocationBlock {
     val invocationBlockType: InvocationBlockType
-    val queueAlgorithm: QueueAlgorithm
-        get() = QueueAlgorithm.IMMEDIATE
-    val queueTimeThreshold: Long
-        get() = 100L
+}
 
+interface IInvocationSingleBlock: IInvocationBlock {
     fun onEntity(promise: CoreTask.Promise) {
         promise.next(invocationBlockType)
     }
-    fun onQueueConsumed(promises: List<CoreTask.Promise>) {}
+}
 
-    enum class QueueAlgorithm {
-        IMMEDIATE, TIME_THRESHOLD
-    }
+interface IInvocationBatchBlock: IInvocationBlock {
+    val queueTimeThreshold: Long
+        get() = 100L
+
+    fun onQueueConsumed(promises: List<CoreTask.Promise>)
 }
 
 interface TaskTimeTracker {

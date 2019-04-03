@@ -2,9 +2,9 @@ package clearnet.blocks
 
 import clearnet.CoreTask
 import clearnet.InvocationBlockType
-import clearnet.interfaces.IInvocationBlock
+import clearnet.interfaces.IInvocationSingleBlock
 
-object DeliverResultBlock : IInvocationBlock {
+object DeliverResultBlock : IInvocationSingleBlock {
     override val invocationBlockType = InvocationBlockType.DELIVER_RESULT
 
     override fun onEntity(promise: CoreTask.Promise) = with(promise) {
