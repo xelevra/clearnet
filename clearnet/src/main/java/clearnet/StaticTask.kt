@@ -2,7 +2,11 @@ package clearnet
 
 import clearnet.error.ClearNetworkException
 import clearnet.model.PostParams
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.ReplaySubject
+import io.reactivex.subjects.Subject
+import java.util.Comparator
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 abstract class StaticTask(
@@ -12,17 +16,25 @@ abstract class StaticTask(
     val requestKey: String by lazy { postParams.flatRequest }
     val startTime = System.currentTimeMillis()
 
-    protected val results = ReplaySubject.create<Result>()
+    protected val results: Subject<Result> = ReplaySubject.create<Result>().toSerialized()
 
-    // Warning not reactive transformations
-    fun getLastResult(): SuccessResult = results.values.asSequence()
-            .map { it as Result }
-            .last { !it.isAncillary && it is SuccessResult } as SuccessResult
+    private val lastSuccess: Subject<SuccessResult> = BehaviorSubject.create<SuccessResult>().toSerialized()
+    private val lastError: Subject<ErrorResult> = BehaviorSubject.create<ErrorResult>().toSerialized()
+    private val resultsCount = AtomicInteger()
 
-    // Warning not reactive transformations
-    fun getLastErrorResult(): ErrorResult = results.values.asSequence()
-            .map { it as Result }
-            .last { !it.isAncillary && it is ErrorResult} as ErrorResult
+    init {
+        results.doOnNext { resultsCount.incrementAndGet() }
+                .filter { !it.isAncillary && it is SuccessResult }
+                .map { it as SuccessResult }
+                .subscribe(lastSuccess)
+        results.filter { !it.isAncillary && it is ErrorResult }
+                .map { it as ErrorResult }
+                .subscribe(lastError)
+    }
+
+    fun getLastResult(): SuccessResult = lastSuccess.blockingFirst()
+
+    fun getLastErrorResult(): ErrorResult = lastError.blockingFirst()
 
     fun getRequestIdentifier() = postParams.requestTypeIdentifier
 
@@ -83,4 +95,8 @@ abstract class StaticTask(
     class ErrorResult(val error: ClearNetworkException, nextIndexes: Array<clearnet.InvocationBlockType>) : Result(nextIndexes, false)
 
     class SuccessResult(val result: kotlin.Any?, val plainResult: kotlin.String?, nextIndexes: kotlin.Array<clearnet.InvocationBlockType>) : Result(nextIndexes, false)
+
+    object ResultsCountComparator : Comparator<StaticTask> {
+        override fun compare(p0: StaticTask, p1: StaticTask) = p0.resultsCount.get().compareTo(p1.resultsCount.get())
+    }
 }

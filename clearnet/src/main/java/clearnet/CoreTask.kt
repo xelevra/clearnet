@@ -24,8 +24,4 @@ class CoreTask internal constructor(
     internal fun promise() = Promise().apply {
         observe().subscribe(results::onNext)    // only elements
     }
-
-    object ResultsCountComparator : Comparator<CoreTask> {
-        override fun compare(p0: CoreTask, p1: CoreTask) = p0.results.values.size.compareTo(p1.results.values.size)
-    }
 }

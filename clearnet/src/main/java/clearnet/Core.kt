@@ -50,7 +50,7 @@ class Core(
             else Observable.empty()
         }.filter { taskItem ->
             taskItem.respond(postParams.requestTypeIdentifier, postParams.cacheKey)
-        }.sorted(CoreTask.ResultsCountComparator).switchIfEmpty {
+        }.sorted(StaticTask.ResultsCountComparator).switchIfEmpty {
             val task = CoreTask(postParams)
             taskStorage += task
             placeToQueue(task, InvocationBlockType.INITIAL)
