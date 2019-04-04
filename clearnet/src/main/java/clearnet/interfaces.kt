@@ -1,6 +1,6 @@
 package clearnet.interfaces
 
-import clearnet.CoreTask
+import clearnet.StaticTask
 import clearnet.InvocationBlockType
 import clearnet.error.ClearNetworkException
 import clearnet.error.ConversionException
@@ -145,7 +145,7 @@ interface IInvocationBlock {
 }
 
 interface IInvocationSingleBlock: IInvocationBlock {
-    fun onEntity(promise: CoreTask.Promise) {
+    fun onEntity(promise: StaticTask.Promise) {
         promise.next(invocationBlockType)
     }
 }
@@ -154,7 +154,7 @@ interface IInvocationBatchBlock: IInvocationBlock {
     val queueTimeThreshold: Long
         get() = 100L
 
-    fun onQueueConsumed(promises: List<CoreTask.Promise>)
+    fun onQueueConsumed(promises: List<StaticTask.Promise>)
 }
 
 interface TaskTimeTracker {

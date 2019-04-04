@@ -1,6 +1,6 @@
 package clearnet.blocks
 
-import clearnet.CoreTask
+import clearnet.StaticTask
 import clearnet.InvocationBlockType
 import clearnet.error.ConversionException
 import clearnet.interfaces.ICacheProvider
@@ -13,7 +13,7 @@ class GetFromCacheBlock(
 ) : IInvocationSingleBlock {
     override val invocationBlockType = InvocationBlockType.GET_FROM_CACHE
 
-    override fun onEntity(promise: CoreTask.Promise) = with(promise) {
+    override fun onEntity(promise: StaticTask.Promise) = with(promise) {
         val responseString = cacheProvider.obtain(taskRef.cacheKey)
 
         if (responseString != null) {

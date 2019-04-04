@@ -27,7 +27,7 @@ class Core(
     private val ioScheduler = Schedulers.from(ioExecutor)
 
     // todo support nulls
-    private val collector = PublishSubject.create<Pair<CoreTask, CoreTask.Result>>().toSerialized()
+    private val collector = PublishSubject.create<Pair<CoreTask, StaticTask.Result>>().toSerialized()
 
     init {
         flow = blocks.associate { block ->
@@ -59,8 +59,8 @@ class Core(
         }.take(1).flatMap {
             it.observe()
         }.flatMap {
-            if (it is CoreTask.ErrorResult) Observable.error(it.error)
-            else Observable.just((it as CoreTask.SuccessResult).result)
+            if (it is StaticTask.ErrorResult) Observable.error(it.error)
+            else Observable.just((it as StaticTask.SuccessResult).result)
         }.observeOn(ioScheduler).subscribe(postParams.subject)
     }
 
@@ -68,8 +68,8 @@ class Core(
     override fun <T> observe(method: String): Observable<T> {
         return collector.filter { (task, _) -> task.respond(method, null) }
                 .map { it.second }
-                .filter { it is CoreTask.SuccessResult }
-                .map { (it as CoreTask.SuccessResult).result as T }
+                .filter { it is StaticTask.SuccessResult }
+                .map { (it as StaticTask.SuccessResult).result as T }
     }
 
 
@@ -91,7 +91,7 @@ class Core(
     }
 
 
-    private fun handleTaskResult(block: IInvocationBlock, task: CoreTask, result: CoreTask.Result) {
+    private fun handleTaskResult(block: IInvocationBlock, task: CoreTask, result: StaticTask.Result) {
         placeToQueues(block.invocationBlockType, task, result.nextIndexes)
     }
 

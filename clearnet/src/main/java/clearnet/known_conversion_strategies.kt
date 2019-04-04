@@ -3,8 +3,6 @@ package clearnet.conversion
 import clearnet.interfaces.ConversionStrategy
 import clearnet.interfaces.ConversionStrategy.ConversionStrategyError
 import clearnet.model.RpcErrorResponse
-import clearnet.model.RpcInnerError
-import clearnet.model.RpcInnerErrorResponse
 import org.json.JSONObject
 
 open class DefaultConversionStrategy : ConversionStrategy {

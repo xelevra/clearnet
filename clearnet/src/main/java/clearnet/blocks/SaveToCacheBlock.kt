@@ -1,6 +1,6 @@
 package clearnet.blocks
 
-import clearnet.CoreTask
+import clearnet.StaticTask
 import clearnet.InvocationBlockType
 import clearnet.error.ConversionException
 import clearnet.interfaces.ICacheProvider
@@ -11,7 +11,7 @@ class SaveToCacheBlock(
 ) : IInvocationSingleBlock {
     override val invocationBlockType = InvocationBlockType.SAVE_TO_CACHE
 
-    override fun onEntity(promise: CoreTask.Promise) = with(promise) {
+    override fun onEntity(promise: StaticTask.Promise) = with(promise) {
         try {
             taskRef.getLastResult().plainResult?.let {
                 cacheProvider.store(

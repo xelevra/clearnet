@@ -22,13 +22,13 @@ class GetFromNetBlock(
 
     fun getHeadersObserver(): HeaderObserver = headersObserver
 
-    override fun onQueueConsumed(promises: List<CoreTask.Promise>) {
+    override fun onQueueConsumed(promises: List<StaticTask.Promise>) {
         when {
             promises.isEmpty() -> return
             promises.size == 1 -> obtainFromNet(promises[0])
             checkExecutors(promises) -> groupByBatchSize(promises)
             else -> {
-                val runningTasks = ArrayList<CoreTask.Promise>()
+                val runningTasks = ArrayList<StaticTask.Promise>()
                 promises.forEach {
                     if (it.taskRef.postParams.requestExecutor === promises[0].taskRef.postParams.requestExecutor) runningTasks.add(it)
                     else it.setNextIndex(InvocationBlockType.GET_FROM_NET)
@@ -43,11 +43,11 @@ class GetFromNetBlock(
         }
     }
 
-    private fun checkExecutors(promises: List<CoreTask.Promise>): Boolean {
+    private fun checkExecutors(promises: List<StaticTask.Promise>): Boolean {
         return (1 until promises.size).none { promises[it - 1].taskRef.postParams.requestExecutor !== promises[it].taskRef.postParams.requestExecutor }
     }
 
-    private fun obtainFromNet(promise: CoreTask.Promise) = with(promise.taskRef.postParams) {
+    private fun obtainFromNet(promise: StaticTask.Promise) = with(promise.taskRef.postParams) {
         try {
             val responseString: String
             try {
@@ -72,8 +72,8 @@ class GetFromNetBlock(
         }
     }
 
-    private fun groupByBatchSize(promises: List<CoreTask.Promise>) {
-        val executingList = mutableListOf<CoreTask.Promise>()
+    private fun groupByBatchSize(promises: List<StaticTask.Promise>) {
+        val executingList = mutableListOf<StaticTask.Promise>()
         var max = promises[0].taskRef.postParams.maxBatchSize
 
         promises.forEach {
@@ -88,7 +88,7 @@ class GetFromNetBlock(
         trimAndExecuteOnSingleExecutor(executingList)
     }
 
-    private fun trimAndExecuteOnSingleExecutor(promises: List<CoreTask.Promise>) {
+    private fun trimAndExecuteOnSingleExecutor(promises: List<StaticTask.Promise>) {
         val maxBatchSize = promises[0].taskRef.postParams.maxBatchSize
         if (promises.size > maxBatchSize) {
             val runningList = promises.subList(0, maxBatchSize)
@@ -100,7 +100,7 @@ class GetFromNetBlock(
         }
     }
 
-    private fun executeSequenceOnSingleExecutor(promises: List<CoreTask.Promise>) {
+    private fun executeSequenceOnSingleExecutor(promises: List<StaticTask.Promise>) {
         if (promises.size == 1) { // in case of maxBatchSize == 1
             obtainFromNet(promises[0])
             return
@@ -109,7 +109,7 @@ class GetFromNetBlock(
             val result: String
             val tasksToWork = promises.toMutableList()
             try {
-                val conflictedHeadersTasks = mutableListOf<CoreTask.Promise>()
+                val conflictedHeadersTasks = mutableListOf<StaticTask.Promise>()
                 val combinedHeaders = combineHeaders(promises, conflictedHeadersTasks)
                 conflictedHeadersTasks.forEach { it ->
                     it.setNextIndex(InvocationBlockType.GET_FROM_NET)
@@ -145,8 +145,8 @@ class GetFromNetBlock(
     }
 
     private fun combineHeaders(
-            promises: List<CoreTask.Promise>,
-            conflictedHeadersTasks: MutableList<CoreTask.Promise>
+            promises: List<StaticTask.Promise>,
+            conflictedHeadersTasks: MutableList<StaticTask.Promise>
     ): Map<String, String> = mutableMapOf<String, String>().apply {
         promises.forEach { promise ->
             promise.taskRef.postParams.headers.entries.forEach {
@@ -162,15 +162,15 @@ class GetFromNetBlock(
     @Deprecated("")
     // todo move this logic to Post params
     // It's difficult because it uses strange protocol with comma instead of HTTP params array
-    private fun combineRpcMethods(promises: List<CoreTask.Promise>) = promises.joinToString(",") { it.taskRef.getRequestIdentifier() }
+    private fun combineRpcMethods(promises: List<StaticTask.Promise>) = promises.joinToString(",") { it.taskRef.getRequestIdentifier() }
 
     @Throws(ConversionException::class)
-    private fun createBatchString(promises: List<CoreTask.Promise>): String {
+    private fun createBatchString(promises: List<StaticTask.Promise>): String {
         return converter.serialize(promises.map { it.taskRef.postParams.requestBody })
     }
 
     @Throws(ConversionException::class)
-    private fun getRequestResponseList(promises: List<CoreTask.Promise>, source: String): List<Pair<CoreTask.Promise, JSONObject>> {
+    private fun getRequestResponseList(promises: List<StaticTask.Promise>, source: String): List<Pair<StaticTask.Promise, JSONObject>> {
         try {
             val array = JSONArray(source)
             return (0 until array.length())
@@ -183,7 +183,7 @@ class GetFromNetBlock(
     }
 
     @Throws(ConversionException::class)
-    private fun getTaskPromiseById(promises: List<CoreTask.Promise>, id: Long): CoreTask.Promise {
+    private fun getTaskPromiseById(promises: List<StaticTask.Promise>, id: Long): StaticTask.Promise {
         try {
             return promises.first {
                 // todo remove manual casting
