@@ -1,0 +1,11 @@
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    compile project(":clearnet")
+    compile 'redis.clients:jedis:3.0.1@jar'
+}
+
+sourceCompatibility = "7"
+targetCompatibility = "7"
