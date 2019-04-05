@@ -3,7 +3,6 @@ package clearnet
 import clearnet.help.*
 import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 
@@ -27,36 +26,27 @@ class SubscribeOnRequestsTest : CoreBlocksTest() {
         val successes = AtomicInteger()
         val subscriptionCalled = AtomicInteger()
 
-        val callback = object : RequestCallbackStub<String>() {
-            override fun onSuccess(response: String) {
-                successes.incrementAndGet()
-            }
-        }
 
-        val subscription = core.subscribe("test.bindableTask", object : RequestCallbackStub<String>() {
-            override fun onSuccess(response: String) {
-                subscriptionCalled.incrementAndGet()
-            }
-        })
+        val subscription = core.observe<String>("test.bindableTask").subscribe { subscriptionCalled.incrementAndGet() }
 
-        testRequests.bindableTask(1, callback)
+        testRequests.bindableTask(1).subscribe{successes.incrementAndGet()}
         forwardScheduler()
         assertEquals(1, successes.get())
         assertEquals(1, subscriptionCalled.get())
 
-        testRequests.notBindableTask(callback)
+        testRequests.notBindableTask().subscribe{successes.incrementAndGet()}
         forwardScheduler()
         assertEquals(2, successes.get())
         assertEquals(1, subscriptionCalled.get())
 
-        testRequests.bindableTask(2, callback)
+        testRequests.bindableTask(2).subscribe { successes.incrementAndGet() }
         forwardScheduler()
         assertEquals(3, successes.get())
         assertEquals(2, subscriptionCalled.get())
 
-        subscription.unsubscribe()
+        subscription.dispose()
 
-        testRequests.bindableTask(3, callback)
+        testRequests.bindableTask(3).subscribe{successes.incrementAndGet()}
         forwardScheduler()
         assertEquals(4, successes.get())
         assertEquals(2, subscriptionCalled.get())

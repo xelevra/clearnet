@@ -1,16 +1,12 @@
 package clearnet.help;
 
-import annotations.Body;
-import annotations.ConversionStrategy;
-import annotations.NotBindable;
-import annotations.Parameter;
-import annotations.RPCMethod;
-import annotations.RPCMethodScope;
+import clearnet.annotations.Body;
+import clearnet.annotations.NotBindable;
+import clearnet.annotations.Parameter;
+import clearnet.annotations.RPCMethod;
+import clearnet.annotations.RPCMethodScope;
 import clearnet.annotations.InvocationStrategy;
 import clearnet.annotations.NoBatch;
-import clearnet.conversion.InnerErrorConversionStrategy;
-import clearnet.conversion.InnerResultConversionStrategy;
-import clearnet.interfaces.RequestCallback;
 import io.reactivex.Observable;
 
 import static clearnet.InvocationStrategy.AUTHORIZED_REQUEST;
@@ -52,59 +48,51 @@ public interface TestRequests {
 
     @NotBindable
     @RPCMethodScope("test")
-    void firstOfBatch(RequestCallback<String> callback);
+    Observable<String> firstOfBatch();
 
     @RPCMethodScope("test")
-    void secondOfBatch(RequestCallback<String> callback);
+    Observable<String>  secondOfBatch();
 
     @RPCMethodScope("test")
     @InvocationStrategy(PRIORITY_CACHE)
-    void forBatchWithPriorityCache(RequestCallback<String> callback);
+    Observable<String> forBatchWithPriorityCache();
 
     @NotBindable
     @NoBatch
     @RPCMethodScope("test")
-    void batchNoBatch(RequestCallback<String> callback);
+    Observable<String> batchNoBatch();
 
     // ---- CacheStrategyTest ----
 
     @RPCMethodScope("test")
-    void noCache(RequestCallback<String> requestCallback);
+    Observable<String> noCache();
 
     @InvocationStrategy(PRIORITY_REQUEST)
     @RPCMethodScope("test")
-    void priorityRequest(RequestCallback<String> requestCallback);
+    Observable<String> priorityRequest();
 
     @InvocationStrategy(PRIORITY_CACHE)
     @RPCMethodScope("test")
-    void priorityCache(RequestCallback<String> requestCallback);
+    Observable<String> priorityCache();
 
 
 
     // ---- SuccessOrErrorResponsesVariantsTest ----
     @RPCMethodScope("test")
-    void commonResponse(RequestCallback<TestObject> callback);
-
-    @ConversionStrategy(InnerResultConversionStrategy.class)
-    @RPCMethodScope("test")
-    void innerResponse(RequestCallback<TestObject> callback);
-
-    @ConversionStrategy(InnerErrorConversionStrategy.class)
-    @RPCMethodScope("test")
-    void innerErrorResponse(RequestCallback<TestObject> callback);
+    Observable<TestObject> commonResponse();
 
 
     // ---- TasksSubscriptionTest ----
     @RPCMethodScope("test")
-    void bindableTask(@Parameter("param") int parameter, RequestCallback<String> callback);
+    Observable<String> bindableTask(@Parameter("param") int parameter);
 
     @NotBindable
     @RPCMethodScope("test")
-    void notBindableTask(RequestCallback<String> callback);
+    Observable<String> notBindableTask();
 
     @RPCMethodScope("test")
     @InvocationStrategy(PRIORITY_REQUEST)
-    void withCacheBindableTask(RequestCallback<String> callback);
+    Observable<String> withCacheBindableTask();
 
     @RPCMethodScope("test")
     @InvocationStrategy({PRIORITY_CACHE, AUTHORIZED_REQUEST, RETRY_IF_NO_NETWORK})

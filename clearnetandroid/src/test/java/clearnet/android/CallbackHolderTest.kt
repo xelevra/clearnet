@@ -2,14 +2,10 @@ package clearnet.android
 
 import clearnet.ExecutorWrapper
 import clearnet.android.help.*
-import clearnet.interfaces.RequestCallback
-import io.reactivex.Observer
-import io.reactivex.disposables.Disposable
-
+import clearnet.help.ObserverStub
 import junit.framework.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import ru.am.kutils.consume
 import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Executor
@@ -31,22 +27,6 @@ class CallbackHolderTest {
     }
 
     @Test
-    fun testCallbackManualClear() {
-        val callback = TestCallback<Any?>()
-
-        testRequests.requestWithCallback(callback)
-        assertEquals(1, callbackHolder.callbackList.size)
-        val params = testConverterExecutor.lastParams!!
-
-        callbackHolder.clear()
-        assertTrue(callbackHolder.callbackList.isEmpty())
-
-        params.subject.onNext(1)
-        assertFalse(callback.called)
-        assertTrue(callbackHolder.callbackList.isEmpty())
-    }
-
-    @Test
     fun testDisposablesManualClear() {
         val testObserver = TestObserver<Any>()
 
@@ -61,39 +41,6 @@ class CallbackHolderTest {
         params.subject.onNext(1)
         assertFalse(testObserver.called)
         assertEquals(0, callbackHolder.disposables.size())
-    }
-
-    @Test
-    fun testWrapperCast(){
-
-        open class T1 : RequestCallback<String> {
-            override fun onSuccess(response: String) {
-            }
-
-            override fun onFailure(exception: clearnet.error.ClearNetworkException) {
-            }
-        }
-
-        var rc: RequestCallback<String> = callbackHolder.wrap(T1(), RequestCallback::class.java)
-
-        rc.onSuccess("ignored")
-        rc.onFailure(clearnet.error.ResponseErrorException("ignored"))
-
-        class T2 : T1(), Runnable {
-            override fun run() {}
-        }
-
-        rc = callbackHolder.wrap(T2(), RequestCallback::class.java)
-
-        val r: Runnable = callbackHolder.wrap(T2(), Runnable::class.java)
-
-        rc.onSuccess("ignored")
-        rc.onFailure(clearnet.error.ResponseErrorException("ignored"))
-
-        rc = callbackHolder.createEmpty(RequestCallback::class.java)
-
-        rc.onSuccess("ignored")
-        rc.onFailure(clearnet.error.ResponseErrorException("ignored"))
     }
 
     @Test
@@ -159,20 +106,7 @@ class CallbackHolderTest {
         assertTrue(testObserver.called)
     }
 
-    internal class TestCallback<T> : RequestCallback<T> {
-        var called = false
-        var errorCalled = false
-
-        override fun onSuccess(response: T) {
-            called = true
-        }
-
-        override fun onFailure(exception: clearnet.error.ClearNetworkException) {
-            errorCalled = true
-        }
-    }
-
-    internal class TestObserver<T> : Observer<T> {
+    internal class TestObserver<T> : ObserverStub<T>() {
         var called = false
         var errorCalled = false
 
@@ -180,12 +114,9 @@ class CallbackHolderTest {
             called = true
         }
 
-        override fun onError(e: Throwable?) {
+        override fun onError(e: Throwable) {
             errorCalled = true
         }
-
-        override fun onComplete() {}
-        override fun onSubscribe(d: Disposable?) {}
     }
 
     private class TestExecutor : Executor {
@@ -195,6 +126,10 @@ class CallbackHolderTest {
             tasks += command
         }
 
-        fun run() = tasks.consume(Runnable::run)
+        fun run() {
+            while (tasks.isNotEmpty()){
+                tasks.poll().run()
+            }
+        }
     }
 }

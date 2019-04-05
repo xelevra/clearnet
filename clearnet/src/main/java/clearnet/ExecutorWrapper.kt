@@ -2,17 +2,13 @@ package clearnet
 
 import clearnet.annotations.*
 import clearnet.annotations.Parameter
-import clearnet.annotations.NoBatch
-import clearnet.annotations.RPCMethodScope
 import clearnet.conversion.DefaultConversionStrategy
-import clearnet.error.ClearNetworkException
 import clearnet.interfaces.*
 import clearnet.interfaces.ConversionStrategy
 import clearnet.model.MergedInvocationStrategy
 import clearnet.model.RpcPostParams
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
-import io.reactivex.subjects.Subject
 import java.lang.reflect.*
 
 
@@ -42,7 +38,7 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
 
             addDefaultParameterIfExists(method, requestBody)
             val (invocationStrategy: MergedInvocationStrategy, expiresAfter: Long) = retrieveInvocationStrategyAndExpiration(method)
-            val (requestCallback, type) = fillRequestBodyAndFindListeners(args, method, requestBody)
+            val type = fillRequestBodyAndFindListeners(args, method, requestBody)
 
             val postParams = RpcPostParams(
                     generateAmruRequestParams(requestBody),
@@ -58,28 +54,11 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
                     serializer
             )
 
-
-            wrapCallback(requestCallback, postParams.subject, callbackHolder)
-
             // todo check callback and observable
             converterExecutor.executePost(postParams)
 
             return if(isReturnsObservable(method)) postParams.subject.observeOn(callbackHolder.scheduler).doOnSubscribe(callbackHolder::hold)
             else null
-        }
-
-        private fun wrapCallback(requestCallback: RequestCallback<Any?>?, subject: Subject<Any>, callbackHolder: ICallbackHolder): RequestCallback<Any?>? {
-            return if (requestCallback == null) {
-                null
-            } else {
-                val result = callbackHolder.wrap(requestCallback, RequestCallback::class.java)
-                subject.subscribe({
-                    result.onSuccess(it)
-                }, {
-                    result.onFailure(it as ClearNetworkException)
-                })
-                result
-            }
         }
 
         private fun retrieveRemoteMethod(method: Method): String {
@@ -99,18 +78,11 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
 
         private fun isReturnsObservable(method: Method) = method.returnType == Observable::class.java
 
-        private fun getGenericParameterType(method: Method, parameterIndex: Int): Type {
-            return (method.genericParameterTypes[parameterIndex] as ParameterizedType).actualTypeArguments[0]
-        }
-
         private fun getGenericReturnType(method: Method): Type {
             return (method.genericReturnType as ParameterizedType).actualTypeArguments[0]
         }
 
-        private fun fillRequestBodyAndFindListeners(args: Array<out Any>?, method: Method, requestBody: RPCRequest): Pair<RequestCallback<Any?>?, Type> {
-            var requestCallback: RequestCallback<Any?>? = null
-
-            var callbackIndex = -1
+        private fun fillRequestBodyAndFindListeners(args: Array<out Any>?, method: Method, requestBody: RPCRequest): Type {
             if (args != null) {
                 val annotations = method.parameterAnnotations
 
@@ -128,21 +100,14 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
                     }
 
                     if (parameterSet || bodySet) continue
-
-                    if (args[i] is RequestCallback<*>) {
-                        requestCallback = args[i] as RequestCallback<Any?>
-                        callbackIndex = i
-                    } else {
-                        throw IllegalArgumentException("All parameters in method " + method.name + " must have the Parameter annotation")
-                    }
+                    else throw IllegalArgumentException("All parameters in method " + method.name + " must have the Parameter annotation")
                 }
             }
             val type = when {
-                callbackIndex >= 0 -> getGenericParameterType(method, callbackIndex)
                 isReturnsObservable(method) -> getGenericReturnType(method)
                 else -> method.getAnnotation(ResultType::class.java)?.value?.java as Type? ?: Any::class.java
             }
-            return Pair(requestCallback, type)
+            return type
         }
 
         private fun addDefaultParameterIfExists(method: Method, requestBody: RPCRequest) {
@@ -190,6 +155,7 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
             }
         }
 
+        @Deprecated("Project depended code")
         private fun generateAmruRequestParams(requestBody: RPCRequest) = mapOf("applicationMethod" to requestBody.method)
 
         private fun getMaxBatchSize(method: Method): Int = with(method.getAnnotation(NoBatch::class.java)) {

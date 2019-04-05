@@ -1,10 +1,11 @@
 package clearnet
 
-import clearnet.error.ClearNetworkException
 import clearnet.help.*
-import clearnet.interfaces.*
+import clearnet.interfaces.HeaderListener
+import clearnet.interfaces.HeaderProvider
+import clearnet.interfaces.ICacheProvider
+import clearnet.interfaces.IRequestExecutor
 import com.google.gson.Gson
-import io.reactivex.schedulers.TestScheduler
 import org.json.JSONArray
 import org.junit.Before
 import org.junit.Test
@@ -44,24 +45,8 @@ class BatchRequestTest : CoreBlocksTest() {
 
         val testRequests = provideTestRequests(BatchTestRequestExecutor())
 
-        testRequests.firstOfBatch(object : RequestCallback<String> {
-            override fun onSuccess(response: String) {
-                firstResult.set(response)
-            }
-
-            override fun onFailure(exception: ClearNetworkException) {
-                throw exception
-            }
-        })
-        testRequests.secondOfBatch(object : RequestCallback<String> {
-            override fun onSuccess(response: String) {
-                secondResult.set(response)
-            }
-
-            override fun onFailure(exception: ClearNetworkException) {
-                throw exception
-            }
-        })
+        testRequests.firstOfBatch().subscribe(firstResult::set)
+        testRequests.secondOfBatch().subscribe(secondResult::set)
 
         forwardScheduler()
 
@@ -80,25 +65,8 @@ class BatchRequestTest : CoreBlocksTest() {
         val firstResult = AtomicReference<String>()
         val secondResult = AtomicReference<String>()
 
-        firstRequests.firstOfBatch(object : RequestCallback<String> {
-            override fun onSuccess(response: String) {
-                firstResult.set(response)
-            }
-
-            override fun onFailure(exception: ClearNetworkException) {
-                throw exception
-            }
-        })
-
-        secondRequests.secondOfBatch(object : RequestCallback<String> {
-            override fun onSuccess(response: String) {
-                secondResult.set(response)
-            }
-
-            override fun onFailure(exception: ClearNetworkException) {
-                throw exception
-            }
-        })
+        firstRequests.firstOfBatch().subscribe(firstResult::set)
+        secondRequests.secondOfBatch().subscribe(secondResult::set)
 
         forwardScheduler()
         forwardScheduler()
@@ -123,8 +91,8 @@ class BatchRequestTest : CoreBlocksTest() {
         }, "testHeader")
 
         val testRequests = provideTestRequests(BatchTestRequestExecutor())
-        testRequests.firstOfBatch(RequestCallbackStub())
-        testRequests.secondOfBatch(RequestCallbackStub())
+        testRequests.firstOfBatch().subscribe()
+        testRequests.secondOfBatch().subscribe()
 
         forwardScheduler()
 
@@ -149,8 +117,8 @@ class BatchRequestTest : CoreBlocksTest() {
                     }
                 }
         )
-        testRequests.firstOfBatch(RequestCallbackStub())
-        testRequests.secondOfBatch(RequestCallbackStub())
+        testRequests.firstOfBatch().subscribe()
+        testRequests.secondOfBatch().subscribe()
 
         forwardScheduler()
         forwardScheduler()
@@ -164,24 +132,8 @@ class BatchRequestTest : CoreBlocksTest() {
         val secondResult = AtomicReference<String>()
 
         val testRequests = provideTestRequests(TestSingleRequestsExecutor("test1"))
-        testRequests.firstOfBatch(object : RequestCallback<String> {
-            override fun onSuccess(response: String) {
-                firstResult.set(response)
-            }
-
-            override fun onFailure(exception: ClearNetworkException) {
-                throw exception
-            }
-        })
-        testRequests.forBatchWithPriorityCache(object : RequestCallback<String> {
-            override fun onSuccess(response: String) {
-                secondResult.set(response)
-            }
-
-            override fun onFailure(exception: ClearNetworkException) {
-                throw exception
-            }
-        })
+        testRequests.firstOfBatch().subscribe(firstResult::set)
+        testRequests.forBatchWithPriorityCache().subscribe(secondResult::set)
 
         forwardScheduler()
 
@@ -194,10 +146,10 @@ class BatchRequestTest : CoreBlocksTest() {
         val executor = TestCheckBatchSizeRequestExecutor()
         val testRequests = provideTestRequests(executor)
 
-        testRequests.firstOfBatch(RequestCallbackStub())
+        testRequests.firstOfBatch().subscribe()
 
         for (i in 0 until MAX_BATCH_SIZE) {
-            testRequests.firstOfBatch(RequestCallbackStub())
+            testRequests.firstOfBatch().subscribe()
         }
 
 //        testScheduler.triggerActions()
@@ -213,9 +165,9 @@ class BatchRequestTest : CoreBlocksTest() {
         val executor = TestCheckBatchSizeRequestExecutor()
         val testRequests = provideTestRequests(executor)
 
-        testRequests.firstOfBatch(RequestCallbackStub())
-        testRequests.batchNoBatch(RequestCallbackStub())
-        testRequests.secondOfBatch(RequestCallbackStub())
+        testRequests.firstOfBatch().subscribe()
+        testRequests.batchNoBatch().subscribe()
+        testRequests.secondOfBatch().subscribe()
 
         testScheduler.triggerActions()
         testScheduler.advanceTimeBy(201, TimeUnit.MILLISECONDS)

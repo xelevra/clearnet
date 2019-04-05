@@ -1,6 +1,6 @@
 package clearnet.help;
 
-import annotations.RPCMethodScope;
+import clearnet.annotations.RPCMethodScope;
 
 @RPCMethodScope("test")
 public interface TestRequestsForSingleScope {

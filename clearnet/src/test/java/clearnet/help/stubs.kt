@@ -3,6 +3,7 @@ package clearnet.help
 import clearnet.Wrapper
 import clearnet.error.ClearNetworkException
 import clearnet.interfaces.*
+import io.reactivex.Observer
 import io.reactivex.disposables.Disposable
 import junit.framework.Assert
 import java.util.*
@@ -30,11 +31,12 @@ object HeadersProviderStub : HeaderProvider {
     override fun obtainHeadersList(): Map<String, String> = emptyMap()
 }
 
-open class RequestCallbackStub<T> : RequestCallback<T> {
-    override fun onSuccess(response: T) {}
+abstract class ObserverStub<T> : Observer<T> {
+    override fun onComplete() {}
+    override fun onSubscribe(d: Disposable) {}
 
-    override fun onFailure(exception: ClearNetworkException) {
-        Assert.fail("onFailure: " + exception.message)
+    override fun onError(e: Throwable) {
+        throw e
     }
 }
 
