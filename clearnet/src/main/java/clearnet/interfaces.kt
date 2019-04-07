@@ -9,6 +9,7 @@ import clearnet.model.MergedInvocationStrategy
 import clearnet.model.PostParams
 import io.reactivex.Observable
 import io.reactivex.Scheduler
+import io.reactivex.Single
 import io.reactivex.disposables.Disposable
 import io.reactivex.internal.schedulers.ImmediateThinScheduler
 import org.json.JSONException
@@ -172,4 +173,9 @@ interface IInvocationStrategy {
 
         operator fun get(hasResult: Boolean) = if (hasResult) onResult else onError
     }
+}
+
+interface IAsyncController {
+    fun listenInput(): Observable<String>
+    fun pushOutput(params: String): Single<Long>
 }

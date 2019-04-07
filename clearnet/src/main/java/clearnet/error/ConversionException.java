@@ -2,7 +2,7 @@ package clearnet.error;
 
 public class ConversionException extends ClearNetworkException {
     {
-        kind = KIND.CONVERSION;
+        setKind(KIND.CONVERSION);
     }
 
     public ConversionException(Throwable cause){

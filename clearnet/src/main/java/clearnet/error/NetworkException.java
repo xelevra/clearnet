@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public class NetworkException extends ClearNetworkException {
     {
-        kind = KIND.NETWORK;
+        setKind(KIND.NETWORK);
     }
 
     public NetworkException(IOException cause){

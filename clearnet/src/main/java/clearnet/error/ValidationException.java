@@ -4,7 +4,7 @@ public class ValidationException extends ClearNetworkException {
     private final Object model;
 
     {
-        kind = KIND.VALIDATION;
+        setKind(KIND.VALIDATION);
     }
 
     public ValidationException(String message, Object model) {
