@@ -108,7 +108,7 @@ class Core(
                 try {
                     block.onEntity(promise)
                 } catch (e: Throwable) {
-                    promise.setError(UnknownExternalException(e.message), block.invocationBlockType)
+                    promise.setError(UnknownExternalException(e), block.invocationBlockType)
                 }
             }
         }
@@ -132,7 +132,7 @@ class Core(
                     block.onQueueConsumed(promises)
                 } catch (e: Throwable) {
                     promises.forEach {
-                        it.setError(UnknownExternalException(e.message), block.invocationBlockType)
+                        it.setError(UnknownExternalException(e), block.invocationBlockType)
                     }
                 }
             }

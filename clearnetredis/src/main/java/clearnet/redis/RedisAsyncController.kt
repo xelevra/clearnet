@@ -3,6 +3,7 @@ package clearnet.redis
 import clearnet.interfaces.IAsyncController
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.schedulers.Schedulers
 import redis.clients.jedis.JedisPool
 
 // todo work queue management
@@ -15,8 +16,11 @@ class RedisAsyncController(
     private val outputNonBlockingScheduler = schedulerFactory.provideScheduler()
 
     override fun listenInput(): Observable<String> {
+        Schedulers.newThread()
+        val scheduler = schedulerFactory.provideScheduler()
         return Observable.fromCallable { redisPool.resource.brpop(inputQueueName)[1] }
-                .subscribeOn(schedulerFactory.provideScheduler())
+                .doOnDispose { scheduler.shutdown() }
+                .subscribeOn(scheduler)
                 .repeat()
     }
 

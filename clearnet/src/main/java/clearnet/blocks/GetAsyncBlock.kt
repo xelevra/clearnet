@@ -59,7 +59,7 @@ class GetAsyncBlock(
         }.subscribe({
             promise.setResult(it.second, it.first, invocationBlockType)
         }, {
-            val error = if(it is ClearNetworkException) it else UnknownExternalException(it.toString())
+            val error = if(it is ClearNetworkException) it else UnknownExternalException(it)
             promise.setError(error, invocationBlockType)
         })
     }
