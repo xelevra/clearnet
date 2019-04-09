@@ -49,7 +49,7 @@ class GetFromNetBlock(
 
     private fun obtainFromNet(promise: StaticTask.Promise) = with(promise.taskRef.postParams) {
         if (httpRequestType == "POST") {
-            requestExecutor.postAsync(promise.taskRef.requestKey, headers, requestParams)
+            requestExecutor.postAsync(promise.taskRef.requestKey, headers, requestParams, requestBody as? RPCRequest)
         } else {
             requestExecutor.getAsync(requestParams, headers)
         }.subscribeOn(ImmediateThinScheduler.INSTANCE).onErrorResumeNext { error ->
