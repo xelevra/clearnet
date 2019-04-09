@@ -1,11 +1,11 @@
 package clearnet.blocks
 
 import clearnet.*
-import clearnet.error.ClearNetworkException
-import clearnet.error.ConversionException
-import clearnet.error.NetworkException
+import clearnet.error.*
 import clearnet.interfaces.*
 import clearnet.interfaces.ConversionStrategy.SmartConverter
+import io.reactivex.Single
+import io.reactivex.internal.schedulers.ImmediateThinScheduler
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -48,28 +48,29 @@ class GetFromNetBlock(
     }
 
     private fun obtainFromNet(promise: StaticTask.Promise) = with(promise.taskRef.postParams) {
-        try {
-            val responseString: String
-            try {
-                val result = if (httpRequestType == "POST") {
-                    requestExecutor.executePost(promise.taskRef.requestKey, headers, requestParams)
-                } else {
-                    requestExecutor.executeGet(requestParams, headers)
-                }
-                headersObserver.propagateHeaders(requestTypeIdentifier, result.second)
-                responseString = result.first
-            } catch (e: IOException) {
-                throw NetworkException(e)
+        if (httpRequestType == "POST") {
+            requestExecutor.postAsync(promise.taskRef.requestKey, headers, requestParams)
+        } else {
+            requestExecutor.getAsync(requestParams, headers)
+        }.subscribeOn(ImmediateThinScheduler.INSTANCE).onErrorResumeNext { error ->
+            val mappedError = when (error) {
+                is IOException -> NetworkException(error)
+                is ClearNetworkException -> error
+                else -> UnknownExternalException(error)
             }
-
+            Single.error(mappedError)
+        }.map { (responseString, headers) ->
+            headersObserver.propagateHeaders(requestTypeIdentifier, headers)
             val stringResult = SmartConverter.getStringResultOrThrow(converter, responseString, conversionStrategy)
             val result = converter.deserialize(stringResult, resultType)
             validator.validate(result)
 
+            result to stringResult
+        }.subscribe({ (result, stringResult) ->
             promise.setResult(result, stringResult, invocationBlockType)
-        } catch (e: ClearNetworkException) {
-            promise.setError(e, invocationBlockType)
-        }
+        }, {
+            promise.setError(it as ClearNetworkException, invocationBlockType)
+        })
     }
 
     private fun groupByBatchSize(promises: List<StaticTask.Promise>) {

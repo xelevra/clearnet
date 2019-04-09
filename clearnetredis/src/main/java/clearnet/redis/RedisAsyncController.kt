@@ -8,10 +8,10 @@ import redis.clients.jedis.JedisPool
 
 // todo work queue management
 class RedisAsyncController(
-        private val redisPool: JedisPool,
-        private val schedulerFactory: ISchedulerFactory,
-        private val inputQueueName: String,
-        private val outputQueueName: String
+    private val redisPool: JedisPool,
+    private val schedulerFactory: ISchedulerFactory,
+    private val inputQueueName: String,
+    private val outputQueueName: String
 ) : IAsyncController {
     private val outputNonBlockingScheduler = schedulerFactory.provideScheduler()
 

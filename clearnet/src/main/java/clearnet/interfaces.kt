@@ -2,6 +2,7 @@ package clearnet.interfaces
 
 import clearnet.StaticTask
 import clearnet.InvocationBlockType
+import clearnet.RPCRequest
 import clearnet.error.ClearNetworkException
 import clearnet.error.ConversionException
 import clearnet.error.HTTPCodeError
@@ -82,11 +83,28 @@ interface IConverterExecutor {
  * Request executor which should just push data to server and return response as String
  */
 interface IRequestExecutor {
-    @Throws(IOException::class, HTTPCodeError::class)
+
+    @Throws(IOException::class, ClearNetworkException::class)
     fun executeGet(headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Pair<String, Map<String, String>>
 
-    @Throws(IOException::class, HTTPCodeError::class)
+    @Throws(IOException::class, ClearNetworkException::class)
     fun executePost(body: String, headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Pair<String, Map<String, String>>
+
+    /**
+     * Do not implement async execution for http requests.
+     * Only use it for socket execution and another non-blocking protocols
+     */
+    fun getAsync(headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Single<Pair<String, Map<String, String>>> {
+        return Single.fromCallable {
+            this.executeGet(headers, queryParams)
+        }
+    }
+
+    fun postAsync(body: String, headers: Map<String, String>, queryParams: Map<String, String> = emptyMap(), bodyObject: RPCRequest? = null): Single<Pair<String, Map<String, String>>> {
+        return Single.fromCallable {
+            this.executePost(body, headers, queryParams)
+        }
+    }
 }
 
 /**
