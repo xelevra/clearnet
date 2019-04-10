@@ -1,8 +1,8 @@
 package clearnet.blocks
 
 import clearnet.InvocationBlockType
-import clearnet.interfaces.IInvocationBlock
+import clearnet.interfaces.IInvocationSingleBlock
 
-object InitialBlock : IInvocationBlock {
+object InitialBlock : IInvocationSingleBlock {
     override val invocationBlockType = InvocationBlockType.INITIAL
 }

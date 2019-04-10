@@ -1,6 +1,6 @@
 package clearnet.interfaces
 
-import clearnet.CoreTask
+import clearnet.StaticTask
 import clearnet.InvocationBlockType
 import clearnet.error.ClearNetworkException
 import clearnet.error.ConversionException
@@ -142,19 +142,19 @@ interface Subscription {
 
 interface IInvocationBlock {
     val invocationBlockType: InvocationBlockType
-    val queueAlgorithm: QueueAlgorithm
-        get() = QueueAlgorithm.IMMEDIATE
+}
+
+interface IInvocationSingleBlock: IInvocationBlock {
+    fun onEntity(promise: StaticTask.Promise) {
+        promise.next(invocationBlockType)
+    }
+}
+
+interface IInvocationBatchBlock: IInvocationBlock {
     val queueTimeThreshold: Long
         get() = 100L
 
-    fun onEntity(promise: CoreTask.Promise) {
-        promise.next(invocationBlockType)
-    }
-    fun onQueueConsumed(promises: List<CoreTask.Promise>) {}
-
-    enum class QueueAlgorithm {
-        IMMEDIATE, TIME_THRESHOLD
-    }
+    fun onQueueConsumed(promises: List<StaticTask.Promise>)
 }
 
 interface TaskTimeTracker {

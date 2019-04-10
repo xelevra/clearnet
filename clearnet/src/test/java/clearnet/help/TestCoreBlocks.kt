@@ -1,6 +1,6 @@
 package clearnet.help
 
-import clearnet.CoreTask
+import clearnet.StaticTask
 import clearnet.InvocationBlockType
 import clearnet.InvocationBlockType.*
 import clearnet.blocks.*
@@ -47,16 +47,16 @@ open class TestCoreBlocks(
         CHECK_AUTH_TOKEN -> checkAuthTokenBlock
     }
 
-    object EmptyErrorsResolverBlock : IInvocationBlock {
+    object EmptyErrorsResolverBlock : IInvocationSingleBlock {
         override val invocationBlockType: InvocationBlockType
             get() = RESOLVE_ERROR
 
-        override fun onEntity(promise: CoreTask.Promise) {
+        override fun onEntity(promise: StaticTask.Promise) {
             promise.setNextIndex(DELIVER_ERROR)
         }
     }
 
-    object EmptyAuthTokenBlock : IInvocationBlock {
+    object EmptyAuthTokenBlock : IInvocationSingleBlock {
         override val invocationBlockType = CHECK_AUTH_TOKEN
     }
 }
