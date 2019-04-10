@@ -5,6 +5,9 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     compile project(":clearnet")
     compile 'redis.clients:jedis:3.0.1@jar'
+
+    testCompile 'junit:junit:4.12'
+    testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
 sourceCompatibility = "7"
