@@ -4,7 +4,7 @@ import clearnet.RPCRequest
 import clearnet.error.ConversionException
 import clearnet.error.UnknownExternalException
 import clearnet.interfaces.IAsyncController
-import clearnet.interfaces.IRequestExecutor
+import clearnet.interfaces.IAsyncRequestExecutor
 import io.reactivex.Observable
 import io.reactivex.Single
 import org.json.JSONException
@@ -12,7 +12,7 @@ import org.json.JSONObject
 
 class AsyncRequestExecutor(
         private val asyncController: IAsyncController
-) : IRequestExecutor {
+) : IAsyncRequestExecutor {
     private val results: Observable<Pair<Long, String>>
 
     init {
@@ -21,12 +21,8 @@ class AsyncRequestExecutor(
         }.share()
     }
 
-    override fun executeGet(headers: Map<String, String>, queryParams: Map<String, String>): Pair<String, Map<String, String>> {
+    override fun getAsync(headers: Map<String, String>, queryParams: Map<String, String>): Single<Pair<String, Map<String, String>>> {
         throw NotImplementedError("Only post methods currently supported")
-    }
-
-    override fun executePost(body: String, headers: Map<String, String>, queryParams: Map<String, String>): Pair<String, Map<String, String>> {
-        return postAsync(body, headers, queryParams).blockingGet()
     }
 
     override fun postAsync(body: String, headers: Map<String, String>, queryParams: Map<String, String>, bodyObject: RPCRequest?): Single<Pair<String, Map<String, String>>> {

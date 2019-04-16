@@ -7,6 +7,7 @@ import clearnet.interfaces.ConversionStrategy
 import clearnet.interfaces.IInvocationStrategy
 import clearnet.interfaces.IRequestExecutor
 import clearnet.interfaces.ISerializer
+import clearnet.support.CombinedRequestExecutor
 import io.reactivex.subjects.ReplaySubject
 import io.reactivex.subjects.Subject
 import java.lang.reflect.Type
@@ -17,7 +18,7 @@ abstract class PostParams(
         val requestParams: Map<String, String>,
         open val requestBody: Any?,
         val resultType: Type,
-        val requestExecutor: IRequestExecutor,
+        val requestExecutor: CombinedRequestExecutor,
         val invocationStrategy: MergedInvocationStrategy,
         val expiresAfter: Long,
         val conversionStrategy: ConversionStrategy,
@@ -35,7 +36,7 @@ class RpcPostParams(
         requestParams: Map<String, String>,
         override val requestBody: RPCRequest,
         resultType: Type,
-        requestExecutor: IRequestExecutor,
+        requestExecutor: CombinedRequestExecutor,
         invocationStrategy: MergedInvocationStrategy,
         expiresAfter: Long,
         conversionStrategy: ConversionStrategy,

@@ -7,6 +7,7 @@ import clearnet.interfaces.*
 import clearnet.interfaces.ConversionStrategy
 import clearnet.model.MergedInvocationStrategy
 import clearnet.model.RpcPostParams
+import clearnet.support.CombinedRequestExecutor
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
 import java.lang.reflect.*
@@ -19,7 +20,16 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
 
     fun <T> create(tClass: Class<T>, requestExecutor: IRequestExecutor, maxBatchSize: Int, callbackHolder: ICallbackHolder = defaultCallbackHolder): T {
         return Proxy.newProxyInstance(tClass.classLoader, arrayOf<Class<*>>(tClass), ApiInvocationHandler(
-                requestExecutor,
+                CombinedRequestExecutor(requestExecutor),
+                callbackHolder,
+                tClass.getAnnotation(RPCMethodScope::class.java)?.value,
+                maxBatchSize
+        )) as T
+    }
+
+    fun <T> create(tClass: Class<T>, requestExecutor: IAsyncRequestExecutor, maxBatchSize: Int, callbackHolder: ICallbackHolder = defaultCallbackHolder): T {
+        return Proxy.newProxyInstance(tClass.classLoader, arrayOf<Class<*>>(tClass), ApiInvocationHandler(
+                CombinedRequestExecutor(requestExecutor),
                 callbackHolder,
                 tClass.getAnnotation(RPCMethodScope::class.java)?.value,
                 maxBatchSize
@@ -28,7 +38,7 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
 
 
     private inner class ApiInvocationHandler(
-            private val requestExecutor: IRequestExecutor,
+            private val requestExecutor: CombinedRequestExecutor,
             private val callbackHolder: ICallbackHolder,
             private val rpcMethodScope: String?,
             private val maxBatchSize: Int

@@ -30,7 +30,7 @@ class GetFromNetBlock(
             else -> {
                 val runningTasks = ArrayList<StaticTask.Promise>()
                 promises.forEach {
-                    if (it.taskRef.postParams.requestExecutor === promises[0].taskRef.postParams.requestExecutor) runningTasks.add(it)
+                    if (it.taskRef.postParams.requestExecutor == promises[0].taskRef.postParams.requestExecutor) runningTasks.add(it)
                     else it.setNextIndex(InvocationBlockType.GET_FROM_NET)
                 }
 
@@ -44,7 +44,7 @@ class GetFromNetBlock(
     }
 
     private fun checkExecutors(promises: List<StaticTask.Promise>): Boolean {
-        return (1 until promises.size).none { promises[it - 1].taskRef.postParams.requestExecutor !== promises[it].taskRef.postParams.requestExecutor }
+        return (1 until promises.size).none { promises[it - 1].taskRef.postParams.requestExecutor != promises[it].taskRef.postParams.requestExecutor }
     }
 
     private fun obtainFromNet(promise: StaticTask.Promise) = with(promise.taskRef.postParams) {
