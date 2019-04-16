@@ -1,6 +1,8 @@
 package clearnet.android.help
 
 import clearnet.interfaces.*
+import io.reactivex.Observer
+import io.reactivex.disposables.Disposable
 import java.util.*
 
 object BodyValidatorStub : IBodyValidator {
@@ -10,6 +12,15 @@ object BodyValidatorStub : IBodyValidator {
 object CacheProviderStub : ICacheProvider {
     override fun store(key: String, value: String, expiresAfter: Long) {}
     override fun obtain(key: String): String? = null
+}
+
+abstract class ObserverStub<T> : Observer<T> {
+    override fun onComplete() {}
+    override fun onSubscribe(d: Disposable) {}
+
+    override fun onError(e: Throwable) {
+        throw e
+    }
 }
 
 object HeadersProviderStub : HeaderProvider {

@@ -1,6 +1,6 @@
 package clearnet.android.help;
 
-import annotations.RPCMethodScope;
+import clearnet.annotations.RPCMethodScope;
 import io.reactivex.Observable;
 
 public interface TestRequests {

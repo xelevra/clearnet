@@ -5,6 +5,7 @@ import clearnet.interfaces.*
 import clearnet.model.PostParams
 import io.reactivex.Observable
 import io.reactivex.Scheduler
+import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
@@ -44,24 +45,28 @@ class Core(
     }
 
 
-    override fun executePost(postParams: PostParams) {
-        Observable.just(postParams.bindable).subscribeOn(worker).flatMap { bindable ->
+    override fun executePost(postParams: PostParams): Observable<Any> {
+        return Observable.just(postParams.bindable).subscribeOn(worker).flatMap { bindable ->
             if (bindable) Observable.fromIterable(taskStorage)
             else Observable.empty()
         }.filter { taskItem ->
             taskItem.respond(postParams.requestTypeIdentifier, postParams.cacheKey)
-        }.sorted(StaticTask.ResultsCountComparator).switchIfEmpty {
+        }.sorted(StaticTask.ResultsCountComparator).map {
+            it.observe()
+        }.switchIfEmpty {
             val task = CoreTask(postParams)
             taskStorage += task
-            placeToQueue(task, InvocationBlockType.INITIAL)
-            task.observe().subscribe { collector.onNext(task to it) }
-            it.onNext(task)
+            it.onNext(task.observe().doOnNext {
+                collector.onNext(task to it)
+            }.doOnSubscribe {
+                placeToQueue(task, InvocationBlockType.INITIAL)
+            })
         }.take(1).flatMap {
-            it.observe()
+            it
         }.flatMap {
             if (it is StaticTask.ErrorResult) Observable.error(it.error)
             else Observable.just((it as StaticTask.SuccessResult).result)
-        }.observeOn(ioScheduler).subscribe(postParams.subject)
+        }
     }
 
 
@@ -95,8 +100,8 @@ class Core(
         placeToQueues(block.invocationBlockType, task, result.nextIndexes)
     }
 
-    private fun Observable<CoreTask>.subscribeImmediate(block: IInvocationSingleBlock) {
-        this.observeOn(worker).subscribe { task ->
+    private fun Observable<CoreTask>.subscribeImmediate(block: IInvocationSingleBlock): Disposable {
+        return this.observeOn(worker).subscribe { task ->
             val promise = task.promise().apply {
                 observe().observeOn(Schedulers.trampoline()).subscribe { result ->
                     handleTaskResult(block, task, result)
@@ -114,8 +119,8 @@ class Core(
         }
     }
 
-    private fun Observable<CoreTask>.subscribeWithTimeThreshold(block: IInvocationBatchBlock) {
-        this.buffer(block.queueTimeThreshold, TimeUnit.MILLISECONDS, worker).filter {
+    private fun Observable<CoreTask>.subscribeWithTimeThreshold(block: IInvocationBatchBlock): Disposable {
+        return this.buffer(block.queueTimeThreshold, TimeUnit.MILLISECONDS, worker).filter {
             !it.isEmpty()
         }.subscribe { taskList ->
             val promises = taskList.map { task ->

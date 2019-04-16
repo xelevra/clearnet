@@ -75,7 +75,7 @@ interface ICacheProvider {
  * It should serialize the object, send the request and deserialize the response to the model.
  */
 interface IConverterExecutor {
-    fun executePost(postParams: PostParams)
+    fun executePost(postParams: PostParams): Observable<Any>
 }
 
 /**

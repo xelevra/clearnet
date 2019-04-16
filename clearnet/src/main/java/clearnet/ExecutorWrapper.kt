@@ -65,10 +65,14 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
             )
 
             // todo check callback and observable
-            converterExecutor.executePost(postParams)
-
-            return if(isReturnsObservable(method)) postParams.subject.observeOn(callbackHolder.scheduler).doOnSubscribe(callbackHolder::hold)
-            else null
+            return if (isReturnsObservable(method)) {
+                // no auto run task if there is rx entity returned
+                converterExecutor.executePost(postParams).observeOn(callbackHolder.scheduler).doOnSubscribe(callbackHolder::hold)
+            } else {
+                // auto run task if there isn't rx entity returned
+                callbackHolder.hold(converterExecutor.executePost(postParams).subscribe())
+                null
+            }
         }
 
         private fun retrieveRemoteMethod(method: Method): String {

@@ -1,10 +1,13 @@
 package clearnet
 
 import clearnet.InvocationBlockType.*
-import clearnet.help.*
+import clearnet.help.BatchTestRequestExecutor
+import clearnet.help.GsonTestSerializer
+import clearnet.help.HeadersProviderStub
+import clearnet.help.TestRequests
 import clearnet.interfaces.IConverterExecutor
-import clearnet.interfaces.Subscription
 import clearnet.model.PostParams
+import io.reactivex.Observable
 import org.junit.Test
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
@@ -18,8 +21,9 @@ class StrategyMergerTest {
         val lastPostParams = AtomicReference<PostParams>()
 
         val converterExecutor = object : IConverterExecutor {
-            override fun executePost(postParams: PostParams) {
+            override fun executePost(postParams: PostParams): Observable<Any> {
                 lastPostParams.set(postParams)
+                return Observable.just(1)
             }
         }
 

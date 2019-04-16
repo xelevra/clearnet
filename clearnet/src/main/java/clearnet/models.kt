@@ -5,11 +5,8 @@ import clearnet.InvocationStrategy
 import clearnet.RPCRequest
 import clearnet.interfaces.ConversionStrategy
 import clearnet.interfaces.IInvocationStrategy
-import clearnet.interfaces.IRequestExecutor
 import clearnet.interfaces.ISerializer
 import clearnet.support.CombinedRequestExecutor
-import io.reactivex.subjects.ReplaySubject
-import io.reactivex.subjects.Subject
 import java.lang.reflect.Type
 
 
@@ -24,8 +21,7 @@ abstract class PostParams(
         val conversionStrategy: ConversionStrategy,
         var headers: Map<String, String>,
         val bindable: Boolean = true,
-        val maxBatchSize: Int = 1,
-        val subject: Subject<Any> = ReplaySubject.create<Any>().toSerialized()
+        val maxBatchSize: Int = 1
 ) {
     abstract val requestTypeIdentifier: String
     abstract val flatRequest: String

@@ -2,7 +2,6 @@ package clearnet.android
 
 import clearnet.ExecutorWrapper
 import clearnet.android.help.*
-import clearnet.help.ObserverStub
 import junit.framework.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -15,15 +14,16 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CallbackHolderTest {
-    val testConverterExecutor = TestConverterExecutor()
+    lateinit var testConverterExecutor: TestConverterExecutor
     var callbackHolder = CallbackHolder(ImmediateExecutor)
-    val testRequests = ExecutorWrapper(testConverterExecutor, HeadersProviderStub, GsonTestSerializer())
-            .create(TestRequests::class.java, RequestExecutorStub(), 1, callbackHolder)
+    lateinit var testRequests: TestRequests
 
     @Before
     fun prepare() {
-        testConverterExecutor.lastParams = null
+        testConverterExecutor = TestConverterExecutor()
         callbackHolder.callbackList.clear()
+        testRequests = ExecutorWrapper(testConverterExecutor, HeadersProviderStub, GsonTestSerializer())
+                .create(TestRequests::class.java, RequestExecutorStub(), 1, callbackHolder)
     }
 
     @Test
@@ -38,7 +38,7 @@ class CallbackHolderTest {
         callbackHolder.clear()
         assertEquals(0, callbackHolder.disposables.size())
 
-        params.subject.onNext(1)
+        testConverterExecutor.results.onNext(1)
         assertFalse(testObserver.called)
         assertEquals(0, callbackHolder.disposables.size())
     }
@@ -97,7 +97,7 @@ class CallbackHolderTest {
         specialTestRequests.reactiveRequest().subscribe(testObserver)
         val params = testConverterExecutor.lastParams!!
 
-        params.subject.onNext(1)
+        testConverterExecutor.results.onNext(1)
 
         assertFalse(testObserver.called)
 
