@@ -45,6 +45,7 @@ open class TestCoreBlocks(
         DELIVER_ERROR -> DeliverErrorBlock
         RESOLVE_ERROR -> errorsResolverBlock
         CHECK_AUTH_TOKEN -> checkAuthTokenBlock
+        SUBSCRIPTION -> EmptySubscriptionBlock
     }
 
     object EmptyErrorsResolverBlock : IInvocationSingleBlock {
@@ -61,6 +62,15 @@ open class TestCoreBlocks(
 
         override fun onEntity(promise: StaticTask.Promise) {
             promise.next(invocationBlockType)
+        }
+    }
+
+    object EmptySubscriptionBlock : IInvocationSubjectBlock {
+        override val invocationBlockType: InvocationBlockType
+            get() = SUBSCRIPTION
+
+        override fun onEntity(promise: StaticTask.Promise) {
+            promise.complete()
         }
     }
 }

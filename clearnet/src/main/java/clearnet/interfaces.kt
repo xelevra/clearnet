@@ -167,7 +167,7 @@ interface IInvocationBatchBlock: IInvocationBlock {
 }
 
 interface IInvocationSubjectBlock: IInvocationBlock {
-    fun onEntity(reactionSubject: StaticTask.Promise)
+    fun onEntity(promise: StaticTask.Promise)
 }
 
 interface TaskTimeTracker {
