@@ -10,6 +10,6 @@ object DeliverResultBlock : IInvocationSingleBlock {
 
     override fun onEntity(promise: StaticTask.Promise) = with(promise) {
         (taskRef as CoreTask).deliver(taskRef.getLastResult())
-        super.onEntity(promise)
+        promise.next(invocationBlockType)
     }
 }

@@ -10,6 +10,6 @@ object DeliverErrorBlock: IInvocationSingleBlock {
 
     override fun onEntity(promise: StaticTask.Promise) = with(promise) {
         (taskRef as CoreTask).deliver(taskRef.getLastErrorResult())
-        super.onEntity(promise)
+        promise.next(invocationBlockType)
     }
 }

@@ -52,11 +52,15 @@ open class TestCoreBlocks(
             get() = RESOLVE_ERROR
 
         override fun onEntity(promise: StaticTask.Promise) {
-            promise.setNextIndex(DELIVER_ERROR)
+            promise.move(DELIVER_ERROR)
         }
     }
 
     object EmptyAuthTokenBlock : IInvocationSingleBlock {
         override val invocationBlockType = CHECK_AUTH_TOKEN
+
+        override fun onEntity(promise: StaticTask.Promise) {
+            promise.next(invocationBlockType)
+        }
     }
 }

@@ -31,7 +31,7 @@ class GetFromNetBlock(
                 val runningTasks = ArrayList<StaticTask.Promise>()
                 promises.forEach {
                     if (it.taskRef.postParams.requestExecutor == promises[0].taskRef.postParams.requestExecutor) runningTasks.add(it)
-                    else it.setNextIndex(InvocationBlockType.GET_FROM_NET)
+                    else it.move(InvocationBlockType.GET_FROM_NET)
                 }
 
                 if (runningTasks.size == 1) {
@@ -82,7 +82,7 @@ class GetFromNetBlock(
                 executingList += it
                 if (it.taskRef.postParams.maxBatchSize < max) max = it.taskRef.postParams.maxBatchSize
             } else {
-                it.setNextIndex(InvocationBlockType.GET_FROM_NET)
+                it.move(InvocationBlockType.GET_FROM_NET)
             }
         }
 
@@ -94,7 +94,7 @@ class GetFromNetBlock(
         if (promises.size > maxBatchSize) {
             val runningList = promises.subList(0, maxBatchSize)
             val overflowList = promises.subList(maxBatchSize, promises.size)
-            overflowList.forEach { it.setNextIndex(InvocationBlockType.GET_FROM_NET) }
+            overflowList.forEach { it.move(InvocationBlockType.GET_FROM_NET) }
             executeSequenceOnSingleExecutor(runningList)
         } else {
             executeSequenceOnSingleExecutor(promises)
@@ -113,7 +113,7 @@ class GetFromNetBlock(
                 val conflictedHeadersTasks = mutableListOf<StaticTask.Promise>()
                 val combinedHeaders = combineHeaders(promises, conflictedHeadersTasks)
                 conflictedHeadersTasks.forEach { it ->
-                    it.setNextIndex(InvocationBlockType.GET_FROM_NET)
+                    it.move(InvocationBlockType.GET_FROM_NET)
                 }
                 tasksToWork.removeAll(conflictedHeadersTasks)
 

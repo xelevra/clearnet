@@ -38,11 +38,13 @@ abstract class StaticTask(
 
     fun getRequestIdentifier() = postParams.requestTypeIdentifier
 
-    @Deprecated("")
-    fun isFinished() = results.hasComplete()
 
     fun respond(method: String, params: String?): Boolean {
         return postParams.requestTypeIdentifier == method && (params == null || cacheKey == params)
+    }
+
+    override fun toString(): String {
+        return "Task $id"
     }
 
     private fun resolveNextIndexes(index: InvocationBlockType, isSuccess: Boolean) = postParams.invocationStrategy[index][isSuccess]
@@ -56,6 +58,8 @@ abstract class StaticTask(
         val taskRef: StaticTask = this@StaticTask
         internal fun observe() = resultSubject.hide()
 
+        fun isFinished() = resultSubject.hasComplete() || resultSubject.hasThrowable()
+
         // Unfortunately we must handle null responses
         fun setResult(result: Any?, plainResult: String?, from: InvocationBlockType) {
             dispatch(SuccessResult(result, plainResult, resolveNextIndexes(from, true)))
@@ -63,9 +67,10 @@ abstract class StaticTask(
 
         fun setError(exception: ClearNetworkException, from: InvocationBlockType) {
             dispatch(ErrorResult(exception, resolveNextIndexes(from, false)))
+            complete()
         }
 
-        fun next(from: InvocationBlockType, success: Boolean = true) = setNextIndexes(resolveNextIndexes(from, success))
+        fun next(from: InvocationBlockType, success: Boolean = true) = move(resolveNextIndexes(from, success))
 
         fun pass(from: InvocationBlockType) = next(from, false)
 
@@ -73,14 +78,18 @@ abstract class StaticTask(
          * Edit the InvocationStrategy flow:
          * a manual set index will be used instead of InvocationStrategy's indexes
          */
-        fun setNextIndex(nextIndex: InvocationBlockType) = setNextIndexes(arrayOf(nextIndex))
+        fun move(nextIndex: InvocationBlockType) = move(arrayOf(nextIndex))
 
         /**
          * Edit the InvocationStrategy flow:
          * manual set indexes will be used instead of InvocationStrategy's indexes
          */
-        fun setNextIndexes(nextIndexes: Array<InvocationBlockType>) {
+        fun move(nextIndexes: Array<InvocationBlockType>) {
             dispatch(Result(nextIndexes))
+        }
+
+        fun complete() {
+            resultSubject.onComplete()
         }
 
         private fun dispatch(result: Result) {

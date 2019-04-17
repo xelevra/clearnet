@@ -156,9 +156,7 @@ interface IInvocationBlock {
 }
 
 interface IInvocationSingleBlock: IInvocationBlock {
-    fun onEntity(promise: StaticTask.Promise) {
-        promise.next(invocationBlockType)
-    }
+    fun onEntity(promise: StaticTask.Promise)
 }
 
 interface IInvocationBatchBlock: IInvocationBlock {
@@ -166,6 +164,10 @@ interface IInvocationBatchBlock: IInvocationBlock {
         get() = 100L
 
     fun onQueueConsumed(promises: List<StaticTask.Promise>)
+}
+
+interface IInvocationSubjectBlock: IInvocationBlock {
+    fun onEntity(reactionSubject: StaticTask.Promise)
 }
 
 interface TaskTimeTracker {

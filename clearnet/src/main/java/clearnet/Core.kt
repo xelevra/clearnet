@@ -4,6 +4,7 @@ import clearnet.error.UnknownExternalException
 import clearnet.interfaces.*
 import clearnet.model.PostParams
 import io.reactivex.Observable
+import io.reactivex.ObservableTransformer
 import io.reactivex.Scheduler
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
@@ -23,7 +24,7 @@ class Core(
         private val timeTracker: TaskTimeTracker? = null,
         vararg blocks: IInvocationBlock
 ) : IConverterExecutor, ICallbackStorage {
-    private val flow: Map<InvocationBlockType, Subject<CoreTask>>
+    private val flow: Map<InvocationBlockType, Subject<StaticTask.Promise>>
     private val taskStorage: MutableList<CoreTask> = CopyOnWriteArrayList()
     private val ioScheduler = Schedulers.from(ioExecutor)
 
@@ -32,11 +33,12 @@ class Core(
 
     init {
         flow = blocks.associate { block ->
-            val subject = PublishSubject.create<CoreTask>().toSerialized()
+            val subject = PublishSubject.create<StaticTask.Promise>().toSerialized()
 
             when (block) {
                 is IInvocationSingleBlock -> subject.subscribeImmediate(block)
                 is IInvocationBatchBlock -> subject.subscribeWithTimeThreshold(block)
+                is IInvocationSubjectBlock -> subject.subscribeSubjectBlock(block)
                 else -> throw IllegalArgumentException("Unsupported block type ${block::class.java.name}")
             }
 
@@ -54,13 +56,9 @@ class Core(
         }.sorted(StaticTask.ResultsCountComparator).map {
             it.observe()
         }.switchIfEmpty {
-            val task = CoreTask(postParams)
-            taskStorage += task
-            it.onNext(task.observe().doOnNext {
-                collector.onNext(task to it)
-            }.doOnSubscribe {
-                placeToQueue(task, InvocationBlockType.INITIAL)
-            })
+            createNewTask(postParams).let { task ->
+                it.onNext(task.observe().compose(taskObservationActions(task)))
+            }
         }.take(1).flatMap {
             it
         }.flatMap {
@@ -77,15 +75,16 @@ class Core(
                 .map { (it as StaticTask.SuccessResult).result as T }
     }
 
-
-    private fun placeToQueue(task: CoreTask, index: InvocationBlockType) {
-        flow[index]!!.onNext(task)
+    private fun createNewTask(postParams: PostParams) =  CoreTask(postParams).also {
+        taskStorage += it
     }
 
-    private fun placeToQueues(from: InvocationBlockType?, task: CoreTask, indexes: Array<InvocationBlockType>) {
-        task.move(from, indexes)
-        indexes.forEach { placeToQueue(task, it) }
-        if (task.isFinished()) {
+    private fun taskObservationActions(task: CoreTask) = ObservableTransformer<StaticTask.Result, StaticTask.Result> { upstream ->
+        upstream.doOnNext {
+            collector.onNext(task to it)
+        }.doOnSubscribe {
+            placeToQueue(task, InvocationBlockType.INITIAL)
+        }.doOnTerminate {
             taskStorage.remove(task)
             timeTracker?.onTaskFinished(
                     task.postParams.invocationStrategy,
@@ -95,17 +94,21 @@ class Core(
         }
     }
 
-
-    private fun handleTaskResult(block: IInvocationBlock, task: CoreTask, result: StaticTask.Result) {
-        placeToQueues(block.invocationBlockType, task, result.nextIndexes)
+    private fun placeToQueue(task: CoreTask, index: InvocationBlockType) {
+        flow[index]!!.onNext(task.promise(worker))
     }
 
-    private fun Observable<CoreTask>.subscribeImmediate(block: IInvocationSingleBlock): Disposable {
-        return this.observeOn(worker).subscribe { task ->
-            val promise = task.promise().apply {
-                observe().observeOn(Schedulers.trampoline()).subscribe { result ->
-                    handleTaskResult(block, task, result)
-                }
+
+    private fun handleTaskResult(task: CoreTask, result: StaticTask.Result) {
+//        System.out.println("Handle $task result")
+        result.nextIndexes.forEach { placeToQueue(task, it) }
+    }
+
+    private fun Observable<StaticTask.Promise>.subscribeImmediate(block: IInvocationSingleBlock): Disposable {
+        return this.observeOn(worker).subscribe { promise ->
+//            System.out.println("Block ${block.invocationBlockType} received task ${promise.taskRef}")
+            promise.observe().firstElement().observeOn(Schedulers.trampoline()).subscribe { result ->
+                handleTaskResult(promise.taskRef as CoreTask, result)
             }
 
             // todo need test this
@@ -119,15 +122,14 @@ class Core(
         }
     }
 
-    private fun Observable<CoreTask>.subscribeWithTimeThreshold(block: IInvocationBatchBlock): Disposable {
+    private fun Observable<StaticTask.Promise>.subscribeWithTimeThreshold(block: IInvocationBatchBlock): Disposable {
         return this.buffer(block.queueTimeThreshold, TimeUnit.MILLISECONDS, worker).filter {
             !it.isEmpty()
-        }.subscribe { taskList ->
-            val promises = taskList.map { task ->
-                task.promise().apply {
-                    observe().observeOn(Schedulers.trampoline()).subscribe { result ->
-                        handleTaskResult(block, task, result)
-                    }
+        }.subscribe { promises ->
+//            System.out.println("Block ${block.invocationBlockType} received tasks list ${promises.joinToString(", "){ it.taskRef.toString() }}")
+            promises.forEach { promise ->
+                promise.observe().firstElement().observeOn(Schedulers.trampoline()).subscribe { result ->
+                    handleTaskResult(promise.taskRef as CoreTask, result)
                 }
             }
 
@@ -139,6 +141,23 @@ class Core(
                     promises.forEach {
                         it.setError(UnknownExternalException(e), block.invocationBlockType)
                     }
+                }
+            }
+        }
+    }
+
+    private fun Observable<StaticTask.Promise>.subscribeSubjectBlock(block: IInvocationSubjectBlock): Disposable {
+        return this.observeOn(worker).subscribe { promise ->
+            promise.observe().observeOn(Schedulers.trampoline()).subscribe { result ->
+                handleTaskResult(promise.taskRef as CoreTask, result)
+            }
+
+            // todo need test this
+            ioExecutor.execute {
+                try {
+                    block.onEntity(promise)
+                } catch (e: Throwable) {
+                    promise.setError(UnknownExternalException(e), block.invocationBlockType)
                 }
             }
         }
