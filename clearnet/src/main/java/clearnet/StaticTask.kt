@@ -2,10 +2,9 @@ package clearnet
 
 import clearnet.error.ClearNetworkException
 import clearnet.model.PostParams
-import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.ReplaySubject
 import io.reactivex.subjects.Subject
-import java.util.Comparator
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
@@ -18,23 +17,11 @@ abstract class StaticTask(
 
     protected val results: Subject<Result> = ReplaySubject.create<Result>().toSerialized()
 
-    private val lastSuccess: Subject<SuccessResult> = BehaviorSubject.create<SuccessResult>().toSerialized()
-    private val lastError: Subject<ErrorResult> = BehaviorSubject.create<ErrorResult>().toSerialized()
     private val resultsCount = AtomicInteger()
 
     init {
-        results.doOnNext { resultsCount.incrementAndGet() }
-                .filter { !it.isAncillary && it is SuccessResult }
-                .map { it as SuccessResult }
-                .subscribe(lastSuccess)
-        results.filter { !it.isAncillary && it is ErrorResult }
-                .map { it as ErrorResult }
-                .subscribe(lastError)
+        results.subscribe { resultsCount.incrementAndGet() }
     }
-
-    fun getLastResult(): SuccessResult = lastSuccess.blockingFirst()
-
-    fun getLastErrorResult(): ErrorResult = lastError.blockingFirst()
 
     fun getRequestIdentifier() = postParams.requestTypeIdentifier
 
@@ -44,7 +31,7 @@ abstract class StaticTask(
     }
 
     override fun toString(): String {
-        return "Task $id"
+        return "Task $id (${getRequestIdentifier()})"
     }
 
     private fun resolveNextIndexes(index: InvocationBlockType, isSuccess: Boolean) = postParams.invocationStrategy[index][isSuccess]
@@ -53,7 +40,9 @@ abstract class StaticTask(
         private val idIterator = AtomicLong()
     }
 
-    inner class Promise {
+    inner class Promise(
+        val lastResult: Result?
+    ) {
         private val resultSubject = ReplaySubject.create<Result>()
         val taskRef: StaticTask = this@StaticTask
         internal fun observe() = resultSubject.hide()
@@ -94,7 +83,6 @@ abstract class StaticTask(
 
         private fun dispatch(result: Result) {
             resultSubject.onNext(result)
-            resultSubject.onComplete()
         }
     }
 

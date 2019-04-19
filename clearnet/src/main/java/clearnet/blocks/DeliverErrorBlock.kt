@@ -9,7 +9,7 @@ object DeliverErrorBlock: IInvocationSingleBlock {
     override val invocationBlockType = InvocationBlockType.DELIVER_ERROR
 
     override fun onEntity(promise: StaticTask.Promise) = with(promise) {
-        (taskRef as CoreTask).deliver(taskRef.getLastErrorResult())
-        promise.next(invocationBlockType)
+        (taskRef as CoreTask).deliver(lastResult as StaticTask.ErrorResult)
+        next(invocationBlockType)
     }
 }

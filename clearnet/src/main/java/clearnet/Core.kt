@@ -26,10 +26,10 @@ class Core(
 ) : IConverterExecutor, ICallbackStorage {
     private val flow: Map<InvocationBlockType, Subject<StaticTask.Promise>>
     private val taskStorage: MutableList<CoreTask> = CopyOnWriteArrayList()
-    private val ioScheduler = Schedulers.from(ioExecutor)
 
     // todo support nulls
     private val collector = PublishSubject.create<Pair<CoreTask, StaticTask.Result>>().toSerialized()
+    private val unknownErrors = PublishSubject.create<UnknownExternalException>().toSerialized()
 
     init {
         flow = blocks.associate { block ->
@@ -44,6 +44,12 @@ class Core(
 
             block.invocationBlockType to subject
         }
+
+        collector.filter { (_, result) ->
+            result is StaticTask.ErrorResult && result.error is UnknownExternalException
+        }.map { (_, result) ->
+            (result as StaticTask.ErrorResult).error as UnknownExternalException
+        }.subscribe(unknownErrors)
     }
 
 
@@ -83,7 +89,7 @@ class Core(
         upstream.doOnNext {
             collector.onNext(task to it)
         }.doOnSubscribe {
-            placeToQueue(task, InvocationBlockType.INITIAL)
+            placeToQueue(task, null, InvocationBlockType.INITIAL)
         }.doOnTerminate {
             taskStorage.remove(task)
             timeTracker?.onTaskFinished(
@@ -94,21 +100,15 @@ class Core(
         }
     }
 
-    private fun placeToQueue(task: CoreTask, index: InvocationBlockType) {
-        flow[index]!!.onNext(task.promise(worker))
-    }
-
-
-    private fun handleTaskResult(task: CoreTask, result: StaticTask.Result) {
-//        System.out.println("Handle $task result")
-        result.nextIndexes.forEach { placeToQueue(task, it) }
+    private fun placeToQueue(task: CoreTask, lastResult: StaticTask.Result?, index: InvocationBlockType) {
+        flow[index]!!.onNext(task.promise(lastResult, worker))
     }
 
     private fun Observable<StaticTask.Promise>.subscribeImmediate(block: IInvocationSingleBlock): Disposable {
         return this.observeOn(worker).subscribe { promise ->
 //            System.out.println("Block ${block.invocationBlockType} received task ${promise.taskRef}")
             promise.observe().firstElement().observeOn(Schedulers.trampoline()).subscribe { result ->
-                handleTaskResult(promise.taskRef as CoreTask, result)
+                handleTaskResult(promise, result)
             }
 
             // todo need test this
@@ -129,7 +129,7 @@ class Core(
 //            System.out.println("Block ${block.invocationBlockType} received tasks list ${promises.joinToString(", "){ it.taskRef.toString() }}")
             promises.forEach { promise ->
                 promise.observe().firstElement().observeOn(Schedulers.trampoline()).subscribe { result ->
-                    handleTaskResult(promise.taskRef as CoreTask, result)
+                    handleTaskResult(promise, result)
                 }
             }
 
@@ -149,7 +149,7 @@ class Core(
     private fun Observable<StaticTask.Promise>.subscribeSubjectBlock(block: IInvocationSubjectBlock): Disposable {
         return this.observeOn(worker).subscribe { promise ->
             promise.observe().observeOn(Schedulers.trampoline()).subscribe { result ->
-                handleTaskResult(promise.taskRef as CoreTask, result)
+                handleTaskResult(promise, result)
             }
 
             // todo need test this
@@ -161,5 +161,11 @@ class Core(
                 }
             }
         }
+    }
+
+    private fun handleTaskResult(promise: StaticTask.Promise, result: StaticTask.Result) {
+//        System.out.println("Handle $task result")
+        val materialResult = if(result.isAncillary) promise.lastResult else result
+        result.nextIndexes.forEach { placeToQueue(promise.taskRef as CoreTask, materialResult, it) }
     }
 }

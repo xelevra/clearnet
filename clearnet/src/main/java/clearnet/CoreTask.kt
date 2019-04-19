@@ -6,7 +6,7 @@ import io.reactivex.Scheduler
 import io.reactivex.subjects.ReplaySubject
 import java.util.concurrent.atomic.AtomicInteger
 
-class CoreTask internal constructor(
+internal class CoreTask internal constructor(
         postParams: PostParams
 ) : StaticTask(postParams) {
     private val delivered = ReplaySubject.create<Result>().toSerialized()
@@ -19,7 +19,7 @@ class CoreTask internal constructor(
 
     fun deliver(result: StaticTask.Result) = delivered.onNext(result)
 
-    internal fun promise(workScheduler: Scheduler) = Promise().apply {
+    internal fun promise(lastResult: Result?, workScheduler: Scheduler) = Promise(lastResult).apply {
         activities.incrementAndGet()
 //        System.out.println("Increment activity on ${this@CoreTask}: ${activities.get()}")
         observe().doAfterTerminate {
