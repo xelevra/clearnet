@@ -3,6 +3,7 @@ package clearnet.support
 import clearnet.RPCRequest
 import clearnet.interfaces.IAsyncRequestExecutor
 import clearnet.interfaces.IRequestExecutor
+import io.reactivex.Observable
 import io.reactivex.Single
 
 class CombinedRequestExecutor private constructor(
@@ -23,6 +24,10 @@ class CombinedRequestExecutor private constructor(
                 syncExecutor.executePost(body, headers, queryParams)
             }
         }
+
+        override fun observe(headers: Map<String, String>, queryParams: Map<String, String>): Observable<String> {
+            return getAsync(headers, queryParams).map { it.first }.toObservable()
+        }
     }, true)
 
     constructor(asyncExecutor: IAsyncRequestExecutor) : this(object : IRequestExecutor {
@@ -41,5 +46,9 @@ class CombinedRequestExecutor private constructor(
     override fun equals(other: Any?): Boolean {
         return other is CombinedRequestExecutor &&
                 (sourceIsSync && syncExecutor === other.syncExecutor || !sourceIsSync && asyncExecutor === other.asyncExecutor)
+    }
+
+    override fun hashCode(): Int {
+        return 0
     }
 }

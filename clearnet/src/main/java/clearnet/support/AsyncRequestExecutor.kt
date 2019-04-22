@@ -40,4 +40,16 @@ class AsyncRequestExecutor(
             asyncController.pushOutput(body).blockingGet()
         }
     }
+
+    override fun observe(headers: Map<String, String>, queryParams: Map<String, String>): Observable<String> {
+        return results.map {
+            JSONObject(it.second) to it.second
+        }.filter { (json, _) ->
+            queryParams.all { (key, value) ->
+                value == json.optString(key)
+            }
+        }.map {
+            it.second
+        }.retry()
+    }
 }

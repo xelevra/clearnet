@@ -97,6 +97,8 @@ interface IAsyncRequestExecutor {
     fun getAsync(headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Single<Pair<String, Map<String, String>>>
 
     fun postAsync(body: String, headers: Map<String, String>, queryParams: Map<String, String> = emptyMap(), bodyObject: RPCRequest? = null): Single<Pair<String, Map<String, String>>>
+
+    fun observe(headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Observable<String>
 }
 
 /**

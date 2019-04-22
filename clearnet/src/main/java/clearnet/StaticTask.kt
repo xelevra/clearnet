@@ -2,9 +2,11 @@ package clearnet
 
 import clearnet.error.ClearNetworkException
 import clearnet.model.PostParams
+import io.reactivex.Observable
+import io.reactivex.disposables.Disposable
 import io.reactivex.subjects.ReplaySubject
 import io.reactivex.subjects.Subject
-import java.util.*
+
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
@@ -49,13 +51,20 @@ abstract class StaticTask(
 
         fun isFinished() = resultSubject.hasComplete() || resultSubject.hasThrowable()
 
-        // Unfortunately we must handle null responses
+        fun createSuccessResult(result: Any?, plainResult: String?, from: InvocationBlockType): Result {
+            return SuccessResult(result, plainResult, resolveNextIndexes(from, true))
+        }
+
         fun setResult(result: Any?, plainResult: String?, from: InvocationBlockType) {
-            dispatch(SuccessResult(result, plainResult, resolveNextIndexes(from, true)))
+            dispatch(createSuccessResult(result, plainResult, from))
+        }
+
+        fun createErrorResult(exception: ClearNetworkException, from: InvocationBlockType): Result {
+            return ErrorResult(exception, resolveNextIndexes(from, false))
         }
 
         fun setError(exception: ClearNetworkException, from: InvocationBlockType) {
-            dispatch(ErrorResult(exception, resolveNextIndexes(from, false)))
+            dispatch(createErrorResult(exception, from))
             complete()
         }
 
@@ -79,6 +88,10 @@ abstract class StaticTask(
 
         fun complete() {
             resultSubject.onComplete()
+        }
+
+        fun subscribeDirect(source: Observable<Result>) {
+            source.subscribe(resultSubject)
         }
 
         private fun dispatch(result: Result) {

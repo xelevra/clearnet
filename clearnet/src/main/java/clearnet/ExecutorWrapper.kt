@@ -15,7 +15,8 @@ import java.lang.reflect.*
 
 class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
                       private val headerProvider: HeaderProvider,
-                      private val serializer: ISerializer) {
+                      private val serializer: ISerializer,
+                      private val defaultConversionStrategy: ConversionStrategy = DefaultConversionStrategy.INSTANCE) {
     private val defaultCallbackHolder: ICallbackHolder
 
     fun <T> create(tClass: Class<T>, requestExecutor: IRequestExecutor, maxBatchSize: Int, callbackHolder: ICallbackHolder = defaultCallbackHolder): T {
@@ -145,7 +146,7 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
         private fun retrieveConversionStrategy(method: Method): ConversionStrategy {
             val conversionStrategyAnnotation = method.getAnnotation(clearnet.annotations.ConversionStrategy::class.java)
             return if (conversionStrategyAnnotation == null) {
-                DefaultConversionStrategy()
+                defaultConversionStrategy
             } else {
                 val result: ConversionStrategy = conversionStrategyAnnotation.value.java.newInstance() as ConversionStrategy
                 result.init(conversionStrategyAnnotation.parameter)

@@ -102,3 +102,9 @@ class MergedInvocationStrategy(strategies: Array<InvocationStrategy>) {
 data class RpcErrorResponse(val code: Long?, val message: String?, val data: Any?) {
     override fun toString() = "Code: $code, $message. \n $data"
 }
+
+data class RPCRequestBody<T>(
+        val id: Long,
+        val method: String,
+        val params: T
+)
