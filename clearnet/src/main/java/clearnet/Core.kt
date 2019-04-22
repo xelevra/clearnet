@@ -106,7 +106,7 @@ class Core(
 
     private fun Observable<StaticTask.Promise>.subscribeImmediate(block: IInvocationSingleBlock): Disposable {
         return this.observeOn(worker).subscribe { promise ->
-//            System.out.println("Block ${block.invocationBlockType} received task ${promise.taskRef}")
+            System.out.println("Block ${block.invocationBlockType} received task ${promise.taskRef}")
             promise.observe().firstElement().observeOn(Schedulers.trampoline()).subscribe { result ->
                 handleTaskResult(promise, result)
             }
@@ -164,7 +164,7 @@ class Core(
     }
 
     private fun handleTaskResult(promise: StaticTask.Promise, result: StaticTask.Result) {
-//        System.out.println("Handle $task result")
+        System.out.println("Handle ${promise.taskRef} result")
         val materialResult = if(result.isAncillary) promise.lastResult else result
         result.nextIndexes.forEach { placeToQueue(promise.taskRef as CoreTask, materialResult, it) }
     }

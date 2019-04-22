@@ -1,18 +1,22 @@
 package clearnet.help;
 
 import clearnet.annotations.Body;
+import clearnet.annotations.ConversionStrategy;
 import clearnet.annotations.NotBindable;
 import clearnet.annotations.Parameter;
 import clearnet.annotations.RPCMethod;
 import clearnet.annotations.RPCMethodScope;
 import clearnet.annotations.InvocationStrategy;
 import clearnet.annotations.NoBatch;
+import clearnet.conversion.ServerSideRpcConversionStrategy;
+import clearnet.model.RPCRequestBody;
 import io.reactivex.Observable;
 
 import static clearnet.InvocationStrategy.AUTHORIZED_REQUEST;
 import static clearnet.InvocationStrategy.PRIORITY_CACHE;
 import static clearnet.InvocationStrategy.PRIORITY_REQUEST;
 import static clearnet.InvocationStrategy.RETRY_IF_NO_NETWORK;
+import static clearnet.InvocationStrategy.SUBSCRIBE;
 
 public interface TestRequests {
 
@@ -110,4 +114,11 @@ public interface TestRequests {
     @RPCMethodScope("test")
     Observable<String> asyncBlockTest();
 
+
+    // ---- SubscriptionBlockTest ----
+
+    @RPCMethodScope("test")
+    @InvocationStrategy(SUBSCRIBE)
+    @ConversionStrategy(ServerSideRpcConversionStrategy.class)
+    Observable<RPCRequestBody<String>> subscribeTest();
 }

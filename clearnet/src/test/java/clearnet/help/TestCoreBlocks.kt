@@ -7,20 +7,16 @@ import clearnet.blocks.*
 import clearnet.interfaces.*
 
 open class TestCoreBlocks(
-        private val converter: ISerializer = GsonTestSerializer(),
-        private val validator: IBodyValidator = BodyValidatorStub,
-        private val cacheProvider: ICacheProvider = CacheProviderStub) {
-
+    private val converter: ISerializer = GsonTestSerializer(),
+    private val validator: IBodyValidator = BodyValidatorStub,
+    private val cacheProvider: ICacheProvider = CacheProviderStub
+) {
     private val getFromNetBlock by lazy { GetFromNetBlock(validator, converter) }
     private val getFromCacheBlock by lazy { GetFromCacheBlock(cacheProvider, converter) }
     private val saveToCacheBlock by lazy { SaveToCacheBlock(cacheProvider) }
-    private val errorsResolverBlock by lazy {
-        createErrorsResolverBlock()
-    }
-
-    private val checkAuthTokenBlock by lazy {
-        createAuthTokenBlock()
-    }
+    private val errorsResolverBlock by lazy { createErrorsResolverBlock() }
+    private val checkAuthTokenBlock by lazy { createAuthTokenBlock() }
+    private val subscriptionBlock by lazy { SubscriptionBlock(converter) }
 
     val getFromNetTimeThreshold = getFromNetBlock.queueTimeThreshold
 
@@ -45,7 +41,7 @@ open class TestCoreBlocks(
         DELIVER_ERROR -> DeliverErrorBlock
         RESOLVE_ERROR -> errorsResolverBlock
         CHECK_AUTH_TOKEN -> checkAuthTokenBlock
-        SUBSCRIPTION -> EmptySubscriptionBlock
+        SUBSCRIPTION -> subscriptionBlock
     }
 
     object EmptyErrorsResolverBlock : IInvocationSingleBlock {
@@ -62,15 +58,6 @@ open class TestCoreBlocks(
 
         override fun onEntity(promise: StaticTask.Promise) {
             promise.next(invocationBlockType)
-        }
-    }
-
-    object EmptySubscriptionBlock : IInvocationSubjectBlock {
-        override val invocationBlockType: InvocationBlockType
-            get() = SUBSCRIPTION
-
-        override fun onEntity(promise: StaticTask.Promise) {
-            promise.complete()
         }
     }
 }

@@ -1,6 +1,7 @@
 package clearnet.support
 
 import clearnet.RPCRequest
+import clearnet.error.ClearNetworkException
 import clearnet.error.ConversionException
 import clearnet.error.UnknownExternalException
 import clearnet.interfaces.IAsyncController
@@ -31,11 +32,7 @@ class AsyncRequestExecutor(
         }.firstOrError().map {
             it.second to emptyMap<String, String>()
         }.onErrorResumeNext { throwable ->
-            val mapped = when (throwable) {
-                is JSONException -> ConversionException(throwable)
-                else -> UnknownExternalException(throwable)
-            }
-            Single.error(mapped)
+            Single.error(mapError(throwable))
         }.doOnSubscribe {
             asyncController.pushOutput(body).blockingGet()
         }
@@ -50,6 +47,13 @@ class AsyncRequestExecutor(
             }
         }.map {
             it.second
-        }.retry()
+        }.onErrorResumeNext { throwable: Throwable ->
+            Observable.error(mapError(throwable))
+        }
+    }
+
+    private fun mapError(throwable: Throwable): ClearNetworkException = when (throwable) {
+        is JSONException -> ConversionException(throwable)
+        else -> UnknownExternalException(throwable)
     }
 }

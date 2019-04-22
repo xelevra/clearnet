@@ -1,19 +1,17 @@
 package clearnet
 
+import clearnet.error.ClearNetworkException
 import clearnet.help.*
-import clearnet.interfaces.IAsyncController
+import clearnet.model.RPCRequestBody
 import clearnet.support.AsyncRequestExecutor
-import io.reactivex.Observable
-import io.reactivex.Single
 import io.reactivex.internal.schedulers.ImmediateThinScheduler
-import io.reactivex.subjects.PublishSubject
-import io.reactivex.subjects.ReplaySubject
-import io.reactivex.subjects.Subject
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class AsyncRequestExecutorTest : CoreBlocksTest() {
 
@@ -66,6 +64,53 @@ class AsyncRequestExecutorTest : CoreBlocksTest() {
         assertEquals(1, controller.pushes.values.size)
         assertEquals(0, controller.subscribers)
         assertEquals(testResult.toString(), result)
+    }
+
+    @Test
+    fun subscribeTest() {
+        var result: String? = null
+        var error: Throwable? = null
+        executor.observe(emptyMap(), mapOf(
+            "method" to "showAss"
+        )).observeOn(ImmediateThinScheduler.INSTANCE).subscribe ({
+            result = it
+        }, {
+            error = it
+        })
+        assertNull(result)
+        assertNull(error)
+        assertEquals(1, controller.subscribers)
+        assertEquals(0, controller.pushes.values.size)
+
+
+        var obj = RPCRequestBody(1, "anyMethod", "test")
+        controller.subject.onNext(serializer.serialize(obj))
+        assertNull(result)
+        assertNull(error)
+        assertEquals(1, controller.subscribers)
+
+        obj = RPCRequestBody(1, "showAss", "test2")
+        serializer.serialize(obj).let {
+            controller.subject.onNext(it)
+            assertEquals(it, result)
+            assertNull(error)
+            assertEquals(1, controller.subscribers)
+        }
+
+        obj = RPCRequestBody(1, "showAss", "test3")
+        serializer.serialize(obj).let {
+            controller.subject.onNext(serializer.serialize(obj))
+            assertEquals(it, result)
+            assertNull(error)
+            assertEquals(1, controller.subscribers)
+        }
+
+        result = null
+        controller.subject.onNext("not valid")
+        assertNull(result)
+        assertNotNull(error)
+        assertTrue(error is ClearNetworkException)
+        assertEquals(0, controller.subscribers)
     }
 
     @Test
@@ -130,21 +175,4 @@ class AsyncRequestExecutorTest : CoreBlocksTest() {
         assertEquals("ok2", result)
     }
 
-    class TestAsyncController: IAsyncController {
-        val subject: Subject<String> = PublishSubject.create()
-        var subscribers = 0
-        val pushes = ReplaySubject.create<String>()
-
-        override fun listenInput(): Observable<String> {
-            return subject.doOnSubscribe {
-                subscribers++
-            }.doOnDispose {
-                subscribers--
-            }.subscribeOn(ImmediateThinScheduler.INSTANCE)
-        }
-
-        override fun pushOutput(params: String): Single<Long> {
-            return Single.just(params).doOnSuccess(pushes::onNext).map { 1L }
-        }
-    }
 }

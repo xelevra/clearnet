@@ -1,11 +1,9 @@
 package clearnet.help
 
 import clearnet.Wrapper
-import clearnet.error.ClearNetworkException
 import clearnet.interfaces.*
 import io.reactivex.Observer
 import io.reactivex.disposables.Disposable
-import junit.framework.Assert
 import java.util.*
 
 object CallbackHolderStub : ICallbackHolder {

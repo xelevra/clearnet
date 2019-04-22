@@ -52,7 +52,7 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
             val type = fillRequestBodyAndFindListeners(args, method, requestBody)
 
             val postParams = RpcPostParams(
-                    generateAmruRequestParams(requestBody),
+                    emptyMap(),
                     requestBody,
                     type,
                     requestExecutor,
@@ -169,9 +169,6 @@ class ExecutorWrapper(private val converterExecutor: IConverterExecutor,
                 Pair(MergedInvocationStrategy(invocationStrategies), expiresAfter)
             }
         }
-
-        @Deprecated("Project depended code")
-        private fun generateAmruRequestParams(requestBody: RPCRequest) = mapOf("applicationMethod" to requestBody.method)
 
         private fun getMaxBatchSize(method: Method): Int = with(method.getAnnotation(NoBatch::class.java)) {
             return if (this == null) maxBatchSize else 1

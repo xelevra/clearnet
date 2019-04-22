@@ -20,13 +20,13 @@ fun ConversionStrategy.checkOuterError(response: JSONObject) {
     }
 }
 
-object ServerSideRpcConversionStrategy : ConversionStrategy {
+class ServerSideRpcConversionStrategy : ConversionStrategy {
     override fun checkErrorOrResult(response: JSONObject): String? {
         return response.toString()
     }
 }
 
-object ServerSideRpcOnlyBodyConversionStrategy : ConversionStrategy {
+class ServerSideRpcOnlyBodyConversionStrategy : ConversionStrategy {
     override fun checkErrorOrResult(response: JSONObject): String? {
         return response.optString("params")
     }
