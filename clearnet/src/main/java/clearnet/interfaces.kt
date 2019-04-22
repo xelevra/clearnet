@@ -1,14 +1,15 @@
 package clearnet.interfaces
 
-import clearnet.StaticTask
 import clearnet.InvocationBlockType
+import clearnet.RPCRequest
+import clearnet.StaticTask
 import clearnet.error.ClearNetworkException
 import clearnet.error.ConversionException
-import clearnet.error.HTTPCodeError
 import clearnet.model.MergedInvocationStrategy
 import clearnet.model.PostParams
 import io.reactivex.Observable
 import io.reactivex.Scheduler
+import io.reactivex.Single
 import io.reactivex.disposables.Disposable
 import io.reactivex.internal.schedulers.ImmediateThinScheduler
 import org.json.JSONException
@@ -81,11 +82,21 @@ interface IConverterExecutor {
  * Request executor which should just push data to server and return response as String
  */
 interface IRequestExecutor {
-    @Throws(IOException::class, HTTPCodeError::class)
+    @Throws(IOException::class, ClearNetworkException::class)
     fun executeGet(headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Pair<String, Map<String, String>>
 
-    @Throws(IOException::class, HTTPCodeError::class)
+    @Throws(IOException::class, ClearNetworkException::class)
     fun executePost(body: String, headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Pair<String, Map<String, String>>
+}
+
+/**
+ * Do not implement async execution for REST http requests.
+ * Only use it for socket execution and another non-blocking protocols
+ */
+interface IAsyncRequestExecutor {
+    fun getAsync(headers: Map<String, String>, queryParams: Map<String, String> = emptyMap()): Single<Pair<String, Map<String, String>>>
+
+    fun postAsync(body: String, headers: Map<String, String>, queryParams: Map<String, String> = emptyMap(), bodyObject: RPCRequest? = null): Single<Pair<String, Map<String, String>>>
 }
 
 /**
@@ -172,4 +183,9 @@ interface IInvocationStrategy {
 
         operator fun get(hasResult: Boolean) = if (hasResult) onResult else onError
     }
+}
+
+interface IAsyncController {
+    fun listenInput(): Observable<String>
+    fun pushOutput(params: String): Single<Long>
 }

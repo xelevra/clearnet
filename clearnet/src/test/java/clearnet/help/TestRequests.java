@@ -101,4 +101,13 @@ public interface TestRequests {
     // ---- Reactive ----
     @RPCMethodScope("test")
     Observable<String> reactiveRequest(@Parameter("p1") int p1);
+
+
+    // ---- AsyncRequestExecutorTest ----
+
+    @NotBindable
+    @NoBatch
+    @RPCMethodScope("test")
+    Observable<String> asyncBlockTest();
+
 }
