@@ -180,10 +180,10 @@ interface IInvocationStrategy {
     val algorithm: Map<InvocationBlockType, Decision>
     val metaData: Map<String, String>
 
-    class Decision(private val onResult: Array<InvocationBlockType>, private val onError: Array<InvocationBlockType> = emptyArray()) {
-        constructor(onResult: InvocationBlockType) : this(arrayOf(onResult))
-        constructor(onResult: InvocationBlockType, onError: InvocationBlockType) : this(arrayOf(onResult), arrayOf(onError))
-        constructor(onResult: Array<InvocationBlockType>, onError: InvocationBlockType) : this(onResult, arrayOf(onError))
+    class Decision(private val onResult: Array<InvocationBlockType>, private val onError: Array<InvocationBlockType> = emptyArray(), stopOnDispose: Boolean) {
+        constructor(onResult: InvocationBlockType, stopOnDispose: Boolean = false) : this(arrayOf(onResult), stopOnDispose = stopOnDispose)
+        constructor(onResult: InvocationBlockType, onError: InvocationBlockType, stopOnDispose: Boolean = false) : this(arrayOf(onResult), arrayOf(onError), stopOnDispose)
+        constructor(onResult: Array<InvocationBlockType>, onError: InvocationBlockType, stopOnDispose: Boolean = false) : this(onResult, arrayOf(onError), stopOnDispose)
 
         operator fun get(hasResult: Boolean) = if (hasResult) onResult else onError
     }

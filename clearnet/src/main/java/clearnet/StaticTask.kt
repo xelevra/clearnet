@@ -42,9 +42,7 @@ abstract class StaticTask(
         private val idIterator = AtomicLong()
     }
 
-    inner class Promise(
-        val lastResult: Result?
-    ) {
+    inner class Promise(val lastResult: Result?) {
         private val resultSubject = ReplaySubject.create<Result>()
         val taskRef: StaticTask = this@StaticTask
         internal fun observe() = resultSubject.hide()

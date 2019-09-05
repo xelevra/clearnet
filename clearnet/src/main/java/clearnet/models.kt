@@ -76,7 +76,7 @@ class MergedInvocationStrategy(strategies: Array<InvocationStrategy>) {
 
 
     operator fun get(index: InvocationBlockType): IInvocationStrategy.Decision = algorithm[index]
-            ?: IInvocationStrategy.Decision(emptyArray(), emptyArray())
+            ?: IInvocationStrategy.Decision(emptyArray(), emptyArray(), false)
 
     @Synchronized
     operator fun get(key: String) = metaData[key]

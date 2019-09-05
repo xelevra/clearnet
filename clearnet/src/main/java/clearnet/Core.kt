@@ -65,8 +65,8 @@ class Core(
             createNewTask(postParams).let { task ->
                 it.onNext(task.observe().compose(taskObservationActions(task)))
             }
-        }.take(1).flatMap {
-            it
+        }.take(1).flatMap { taskResultsObservable ->
+            taskResultsObservable
         }.flatMap {
             if (it is StaticTask.ErrorResult) Observable.error(it.error)
             else Observable.just((it as StaticTask.SuccessResult).result)
@@ -81,22 +81,15 @@ class Core(
                 .map { (it as StaticTask.SuccessResult).result as T }
     }
 
+    // todo complete action
     private fun createNewTask(postParams: PostParams) =  CoreTask(postParams).also {
         taskStorage += it
+        placeToQueue(it, null, InvocationBlockType.INITIAL)
     }
 
     private fun taskObservationActions(task: CoreTask) = ObservableTransformer<StaticTask.Result, StaticTask.Result> { upstream ->
         upstream.doOnNext {
             collector.onNext(task to it)
-        }.doOnSubscribe {
-            placeToQueue(task, null, InvocationBlockType.INITIAL)
-        }.doOnTerminate {
-            taskStorage.remove(task)
-            timeTracker?.onTaskFinished(
-                    task.postParams.invocationStrategy,
-                    task.postParams.requestTypeIdentifier,
-                    System.currentTimeMillis() - task.startTime
-            )
         }
     }
 
